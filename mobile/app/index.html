@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#ff8fab" />
+    <title>Hopper</title>
+    <meta name="description" content="Buget pentru studenți: bursă, job part-time, cămin, cursuri și economii." />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="whimsy.css" />
+  </head>
+  <body>
+    <section id="native-launch-status" class="native-launch" role="status" aria-live="polite">
+      <h1>Hopper</h1>
+      <p id="native-launch-message">Se deschide aplicația…</p>
+      <button id="native-launch-retry" class="primary-button" type="button" hidden>Încearcă din nou</button>
+    </section>
+    <div id="native-interface" hidden>
+      <aside id="storage-warning" class="storage-warning" role="alert" hidden><p></p><button id="storage-retry" type="button" class="secondary-button" data-i18n="Încearcă din nou">Încearcă din nou</button></aside>
+    <div class="auth-screen" id="auth-screen">
+      <div class="auth-bubbles" aria-hidden="true">
+        <span class="auth-soap-bubble"></span><span class="auth-soap-bubble"></span>
+        <span class="auth-soap-bubble"></span><span class="auth-soap-bubble"></span>
+        <span class="auth-soap-bubble"></span><span class="auth-soap-bubble"></span>
+        <span class="auth-soap-bubble"></span><span class="auth-soap-bubble"></span>
+      </div>
+      <div class="auth-card">
+        <div class="language-control"><label id="auth-language-label" for="auth-language" data-i18n="Limbă">Limbă</label><select id="auth-language" data-language-choice><option value="ro">Română</option><option value="en">English</option><option value="fr">Français</option><option value="ru">Русский</option></select><button id="auth-language-button" class="date-field-button study-year-button" type="button" data-language-trigger="auth-language" aria-haspopup="dialog" aria-controls="language-picker" aria-expanded="false" aria-labelledby="auth-language-label auth-language-value" hidden><span id="auth-language-value" class="language-field-value">Română</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button></div>
+        <p class="auth-student-title"><img class="hopper-brand-icon" src="animals/bunny.png" alt="" width="40" height="40" />Hopper</p>
+        <p class="student-note"><span data-i18n="Mai multă claritate pentru banii tăi din facultate.">Mai multă claritate pentru banii tăi din facultate.</span></p>
+
+        <form id="login-form" class="auth-form active" novalidate>
+          <h2><span data-i18n="Bine ai revenit!">Bine ai revenit!</span></h2>
+
+          <div class="field-group">
+            <label for="login-email"><span data-i18n="Email">Email</span></label>
+            <input id="login-email" type="email" placeholder="alex@email.com" aria-describedby="login-status" autocomplete="username" required />
+          </div>
+
+          <div class="field-group">
+            <label for="login-password"><span data-i18n="Parolă">Parolă</span></label>
+            <input id="login-password" type="password" placeholder="Introdu parola" aria-describedby="login-status" autocomplete="current-password" required  data-i18n-placeholder="Introdu parola"/>
+          </div>
+
+          <button type="submit" class="primary-button"><span data-i18n="Intră în cont">Intră în cont</span></button>
+          <p id="login-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
+          <button type="button" class="auth-form-switch" data-target="register-form" aria-controls="register-form" data-i18n="Înregistrează-te">Înregistrează-te</button>
+        </form>
+
+        <form id="register-form" class="auth-form">
+          <h2><span data-i18n="Începe bugetul tău">Începe bugetul tău</span></h2>
+
+          <div class="field-group">
+            <label for="register-name"><span data-i18n="Nume">Nume</span></label>
+            <input id="register-name" type="text" placeholder="Alex" required />
+          </div>
+
+          <div class="field-group">
+            <label for="register-email"><span data-i18n="Email">Email</span></label>
+            <input id="register-email" type="email" placeholder="alex@email.com" required />
+          </div>
+
+          <div class="field-group">
+            <label for="register-password"><span data-i18n="Parolă">Parolă</span></label>
+            <input id="register-password" type="password" placeholder="Alege o parolă" required  data-i18n-placeholder="Alege o parolă"/>
+          </div>
+
+          <p id="register-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
+          <button type="submit" class="primary-button"><span data-i18n="Creează cont">Creează cont</span></button>
+          <button type="button" class="auth-form-switch" data-target="login-form" aria-controls="login-form" data-i18n="Înapoi la conectare">Înapoi la conectare</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="app-screen hidden" id="app-screen">
+      <div class="dashboard-shell">
+        <header class="topbar">
+          <div>
+            <p class="welcome-text"><span data-i18n="Salut,">Salut,</span> <span id="user-name">student</span>!</p>
+            <h1><button id="brand-bunny-button" class="brand-bunny-button" type="button" title="Bugetul meu" data-i18n-title="Bugetul meu"><img class="hopper-brand-icon" src="animals/bunny.png" alt="" width="40" height="40" /><span class="hopper-brand-name">Hopper</span></button></h1>
+            <p class="student-intro"><span data-i18n="Bursa, jobul și cheltuielile din facultate, într-un singur loc.">Bursa, jobul și cheltuielile din facultate, într-un singur loc.</span></p>
+            <p id="active-currency-label" class="currency-badge"><span data-i18n="Valută: RON">Valută: RON</span></p>
+          </div>
+          <aside id="achievement-companion" class="achievement-companion" aria-label="Iepurașul reușitelor" data-i18n-aria-label="Iepurașul reușitelor">
+            <div class="companion-bubble">
+              <p id="companion-message" role="status" aria-live="polite" aria-atomic="true"></p>
+              <button id="companion-next" class="companion-next" type="button" hidden><span data-i18n="Altă reușită ›">Altă reușită ›</span></button>
+            </div>
+            <img class="companion-bunny" src="animals/bunny.png" alt="" width="80" height="80" draggable="false" />
+          </aside>
+          <button id="header-profile-button" class="header-profile-button" type="button" aria-label="Deschide profilul și setările" title="Profil și setări" data-i18n-title="Profil și setări" data-i18n-aria-label="Deschide profilul și setările">
+            <img id="header-profile-photo" class="avatar-photo hidden" alt="" width="72" height="72" />
+            <span id="header-profile-initial" aria-hidden="true">H</span>
+          </button>
+        </header>
+
+        <nav class="view-tabs" aria-label="Navigare" data-i18n-aria-label="Navigare">
+          <button class="view-tab active" aria-current="page" data-view="home" type="button"><svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 9h18M16 13h5v4h-5zM7 5V3h10"/></svg><span data-i18n="Bugetul meu">Bugetul meu</span></button>
+          <button class="view-tab" data-view="report" type="button"><svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z"/><path d="M9 7h6M9 11h6M9 15h3"/></svg><span data-i18n="Cheltuieli">Cheltuieli</span></button>
+          <button class="view-tab" data-view="goals" type="button"><svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 11a7 7 0 0 1 12-5l3-1v5l1 2-2 2-1 5h-3l-1-3H9l-1 3H5l-1-5H2v-4h3Z"/><path d="M8 6V3h5M9 8h4"/><path d="M16 10h.01"/></svg><span data-i18n="Economii">Economii</span></button>
+          <button class="view-tab" data-view="settings" type="button"><svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg><span data-i18n="Profil și setări">Profil și setări</span></button>
+        </nav>
+
+        <main class="page-view active" data-view="home">
+          <section class="panel expense-overview" aria-labelledby="expense-overview-title">
+            <div class="panel-heading">
+              <span class="icon-box" aria-hidden="true">📊</span>
+              <h3 id="expense-overview-title"><span data-i18n="Cheltuieli">Cheltuieli</span></h3>
+            </div>
+            <div class="expense-overview-content">
+              <div id="expense-wheel" class="expense-wheel" role="img" aria-label="Nu ai cheltuieli în această lună" data-i18n-aria-label="Nu ai cheltuieli în această lună">
+                <div class="wheel-center"><span id="expense-wheel-month"></span></div>
+              </div>
+              <ul id="expense-legend" class="legend expense-legend" aria-live="polite">
+                <li data-category="Food"><span class="dot color-1" aria-hidden="true"></span><span class="legend-category"><span data-i18n="Mâncare">Mâncare</span></span><strong class="legend-percent">0%</strong></li>
+                <li data-category="Housing"><span class="dot color-2" aria-hidden="true"></span><span class="legend-category"><span data-i18n="Cămin / chirie">Cămin / chirie</span></span><strong class="legend-percent">0%</strong></li>
+                <li data-category="Transport"><span class="dot color-3" aria-hidden="true"></span><span class="legend-category"><span data-i18n="Transport">Transport</span></span><strong class="legend-percent">0%</strong></li>
+                <li data-category="Education"><span class="dot color-4" aria-hidden="true"></span><span class="legend-category"><span data-i18n="Facultate">Facultate</span></span><strong class="legend-percent">0%</strong></li>
+                <li data-category="Bills"><span class="dot color-5" aria-hidden="true"></span><span class="legend-category"><span data-i18n="Facturi">Facturi</span></span><strong class="legend-percent">0%</strong></li>
+                <li data-category="Entertainment"><span class="dot color-6" aria-hidden="true"></span><span class="legend-category"><span data-i18n="Timp liber">Timp liber</span></span><strong class="legend-percent">0%</strong></li>
+                <li data-category="Health"><span class="dot color-7" aria-hidden="true"></span><span class="legend-category"><span data-i18n="Sănătate">Sănătate</span></span><strong class="legend-percent">0%</strong></li>
+                <li data-category="Other"><span class="dot color-8" aria-hidden="true"></span><span class="legend-category"><span data-i18n="Altele">Altele</span></span><strong class="legend-percent">0%</strong></li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="panel summary-panel" aria-labelledby="summary-title">
+            <div class="panel-heading"><span class="icon-box" aria-hidden="true">🎓</span><h3 id="summary-title"><span data-i18n="Luna ta în cifre">Luna ta în cifre</span></h3></div>
+            <div class="summary-grid" aria-live="polite">
+              <div class="summary-item"><span><span data-i18n="Venituri după economii">Venituri după economii</span></span><strong id="monthly-income">0 RON</strong></div>
+              <div class="summary-item"><span><span data-i18n="Cheltuieli în luna selectată">Cheltuieli în luna selectată</span></span><strong id="monthly-expenses">0 RON</strong></div>
+              <div class="summary-item"><span><span data-i18n="Bani rămași din venituri">Bani rămași din venituri</span></span><strong id="monthly-balance">0 RON</strong></div>
+              <div class="summary-item"><span><span data-i18n="Rămas din buget">Rămas din buget</span></span><strong id="budget-remaining"><span data-i18n="Nesetat">Nesetat</span></strong></div>
+            </div>
+          </section>
+
+          <div class="dashboard-grid">
+            <div class="dashboard-main">
+              <section class="panel tracker-panel">
+                <div class="panel-heading"><span class="icon-box" aria-hidden="true">📝</span><h3><span data-i18n="Adaugă o cheltuială">Adaugă o cheltuială</span></h3></div>
+                <form id="expense-form" class="student-form">
+                  <div class="field-group compact"><label for="description"><span data-i18n="Ce ai cumpărat?">Ce ai cumpărat?</span></label><input id="description" type="text" placeholder="Cantină, xerox, abonament autobuz…" required  data-i18n-placeholder="Cantină, xerox, abonament autobuz…"/></div>
+                  <div class="field-group compact"><label for="amount" data-money-label="Sumă"><span data-i18n="Sumă (RON)">Sumă (RON)</span></label><input id="amount" type="number" min="0.01" step="0.01" placeholder="25" required /></div>
+                  <div class="field-group compact"><label id="expense-category-label" for="category"><span data-i18n="Categorie">Categorie</span></label><select id="category" required>
+                    <option data-i18n="Detectează automat" value="auto">Detectează automat</option><option data-i18n="Mâncare" value="Food">Mâncare</option><option data-i18n="Cămin / chirie" value="Housing">Cămin / chirie</option><option data-i18n="Transport" value="Transport">Transport</option><option data-i18n="Facultate / cursuri" value="Education">Facultate / cursuri</option><option data-i18n="Facturi / abonamente" value="Bills">Facturi / abonamente</option><option data-i18n="Timp liber" value="Entertainment">Timp liber</option><option data-i18n="Sănătate" value="Health">Sănătate</option><option data-i18n="Altele" value="Other">Altele</option>
+                  </select><button id="expense-category-button" class="date-field-button study-year-button" type="button" hidden aria-haspopup="dialog" aria-controls="expense-category-picker" aria-expanded="false" aria-labelledby="expense-category-label expense-category-value"><span id="expense-category-value">Detectează automat</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button></div>
+                  <div class="field-group compact"><label for="expense-date-button"><span data-i18n="Data">Data</span></label><input id="expense-date" type="hidden" /><button id="expense-date-button" class="date-field-button" type="button" data-date-input="expense-date" aria-haspopup="dialog" aria-controls="date-picker" aria-expanded="false"><span class="date-field-value"></span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M7 3v4M17 3v4M3 11h18M8 15h2M14 15h2" /></svg></button></div>
+                  <button type="submit" class="primary-button"><span data-i18n="Adaugă cheltuiala">Adaugă cheltuiala</span></button>
+                </form>
+                <form id="custom-category-form" class="student-form expense-category-form">
+                  <div class="field-group"><label for="custom-category-name"><span data-i18n="Adaugă o categorie de cheltuială">Adaugă o categorie de cheltuială</span></label><input id="custom-category-name" type="text" maxlength="40" placeholder="Hobby-uri" required data-i18n-placeholder="Hobby-uri" /></div>
+                  <button class="secondary-button" type="submit"><span data-i18n="Adaugă categoria">Adaugă categoria</span></button>
+                </form>
+                <p id="custom-category-status" class="student-note" role="status"></p>
+                <button id="manage-categories" class="secondary-button" type="button" aria-haspopup="dialog" aria-controls="category-manager" aria-expanded="false" data-i18n="Gestionează categoriile">Gestionează categoriile</button>
+              </section>
+
+              <section class="panel income-panel">
+                <div class="panel-heading"><span class="icon-box" aria-hidden="true">💳</span><h3><span data-i18n="De unde vin banii?">De unde vin banii?</span></h3></div>
+                <form id="income-form" class="student-form">
+                  <div class="field-group compact"><label id="income-source-label" for="income-source-button"><span data-i18n="Sursă">Sursă</span></label><select id="income-source" hidden><option data-i18n="Bursă" value="Bursă">Bursă</option><option data-i18n="Sprijin de la familie" value="Sprijin de la familie">Sprijin de la familie</option><option data-i18n="Job part-time" value="Job part-time">Job part-time</option><option data-i18n="Internship" value="Internship">Internship</option><option data-i18n="Freelance" value="Freelance">Freelance</option><option data-i18n="Alte venituri" value="Alte venituri">Alte venituri</option></select><button id="income-source-button" class="date-field-button study-year-button" type="button" aria-haspopup="dialog" aria-controls="income-source-picker" aria-expanded="false" aria-labelledby="income-source-label income-source-value"><span id="income-source-value">Bursă</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button></div>
+                  <div class="field-group compact"><label for="income-amount" data-money-label="Sumă"><span data-i18n="Sumă (RON)">Sumă (RON)</span></label><input id="income-amount" type="number" min="0.01" step="0.01" placeholder="800" required /></div>
+                  <div class="field-group compact"><label for="income-date-button"><span data-i18n="Data">Data</span></label><input id="income-date" type="hidden" /><button id="income-date-button" class="date-field-button" type="button" data-date-input="income-date" aria-haspopup="dialog" aria-controls="date-picker" aria-expanded="false"><span class="date-field-value"></span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M7 3v4M17 3v4M3 11h18M8 15h2M14 15h2" /></svg></button></div>
+                  <button type="submit" class="primary-button"><span data-i18n="Adaugă venitul">Adaugă venitul</span></button>
+                </form>
+                <ul id="income-list" class="tracker-list"></ul>
+              </section>
+            </div>
+
+            <aside class="dashboard-side">
+              <section class="panel budget-panel">
+                <div class="panel-heading"><span class="icon-box" aria-hidden="true">👛</span><h3><span data-i18n="Bugetul lunar">Bugetul lunar</span></h3></div>
+                <p class="student-note"><span data-i18n="Alege cât vrei să cheltuiești într-o lună de facultate.">Alege cât vrei să cheltuiești într-o lună de facultate.</span></p>
+                <form id="budget-form"><div class="field-group"><label for="monthly-budget" data-money-label="Limită lunară"><span data-i18n="Limită lunară (RON)">Limită lunară (RON)</span></label><input id="monthly-budget" type="number" min="0.01" step="0.01" placeholder="1500" required /></div><button type="submit" class="primary-button"><span data-i18n="Salvează bugetul">Salvează bugetul</span></button></form>
+                <p id="budget-status" class="student-note" role="status"><span data-i18n="Setează un buget pentru a urmări cât mai poți cheltui.">Setează un buget pentru a urmări cât mai poți cheltui.</span></p>
+              </section>
+
+              <section class="panel calendar-panel">
+                <div class="panel-heading compact-heading"><span class="icon-box" aria-hidden="true">📅</span><h3><span data-i18n="Calendar">Calendar</span></h3></div>
+                <div class="calendar-box">
+                  <div class="calendar-header"><button id="prev-month" type="button" aria-label="Luna precedentă" class="calendar-nav" data-i18n-aria-label="Luna precedentă">‹</button><strong id="calendar-month-label"></strong><button id="next-month" type="button" aria-label="Luna următoare" class="calendar-nav" data-i18n-aria-label="Luna următoare">›</button></div>
+                  <div class="calendar-weekdays"><span>Lu</span><span>Ma</span><span>Mi</span><span>Jo</span><span>Vi</span><span>Sâ</span><span>Du</span></div>
+                  <div id="calendar-dates" class="calendar-dates"></div>
+                </div>
+                <ul class="calendar-spending-legend" aria-label="Culorile cheltuielilor zilnice" data-i18n-aria-label="Culorile cheltuielilor zilnice">
+                  <li><span class="spending-key spending-key-low" aria-hidden="true"></span><span data-i18n="Reduse">Reduse</span></li>
+                  <li><span class="spending-key spending-key-normal" aria-hidden="true"></span><span data-i18n="Moderate">Moderate</span></li>
+                  <li><span class="spending-key spending-key-high" aria-hidden="true"></span><span data-i18n="Ridicate">Ridicate</span></li>
+                </ul>
+              </section>
+
+              <section class="panel fixed-panel">
+                <div class="panel-heading"><span class="icon-box" aria-hidden="true">📚</span><h3><span data-i18n="Cheltuieli pe categorii">Cheltuieli pe categorii</span></h3></div>
+                <div id="category-totals" class="student-category-totals" role="group" aria-label="Graficul cheltuielilor pe categorii" data-i18n-aria-label="Graficul cheltuielilor pe categorii"></div>
+                <div class="chart-footer"><p id="category-chart-detail" class="chart-detail" role="status"></p></div>
+              </section>
+            </aside>
+          </div>
+        </main>
+
+        <main class="page-view" data-view="report">
+          <section class="report-screen panel">
+            <div class="report-header"><div><p class="small-label"><span data-i18n="Cheltuielile tale">Cheltuielile tale</span></p><h2 id="report-total" tabindex="-1">0 RON</h2><p class="student-note"><span data-i18n="Tranzacțiile din luna curentă">Tranzacțiile din luna curentă</span></p></div></div>
+            <div id="report-list" class="report-list"></div>
+          </section>
+        </main>
+
+        <main class="page-view" data-view="goals">
+          <section class="goals-screen panel">
+            <div class="goals-header"><div><p class="small-label"><span data-i18n="Economii pentru ce contează">Economii pentru ce contează</span></p><h2><span data-i18n="Următorul tău obiectiv">Următorul tău obiectiv</span></h2></div></div>
+            <p class="student-note"><span data-i18n="Un laptop pentru cursuri, Erasmus sau o rezervă pentru cheltuieli neprevăzute.">Un laptop pentru cursuri, Erasmus sau o rezervă pentru cheltuieli neprevăzute.</span></p>
+            <form id="savings-form" class="student-form">
+              <div class="field-group"><label for="savings-name"><span data-i18n="Pentru ce economisești?">Pentru ce economisești?</span></label><input id="savings-name" type="text" maxlength="80" placeholder="Laptop pentru facultate" required  data-i18n-placeholder="Laptop pentru facultate"/></div>
+              <div class="field-group"><label for="savings-target" data-money-label="Țintă"><span data-i18n="Țintă (RON)">Țintă (RON)</span></label><input id="savings-target" type="number" min="0.01" step="0.01" placeholder="2500" required /></div>
+              <button type="submit" class="primary-button"><span data-i18n="Salvează obiectivul">Salvează obiectivul</span></button>
+            </form>
+            <button id="savings-new-goal" class="secondary-button new-goal-button" type="button" hidden><span data-i18n="Începe un obiectiv nou">Începe un obiectiv nou</span></button>
+            <button id="savings-cancel-new-goal" class="secondary-button new-goal-button" type="button" hidden><span data-i18n="Anulează noul obiectiv">Anulează noul obiectiv</span></button>
+            <form id="savings-contribution-form" class="student-form savings-contribution-form">
+              <div class="field-group"><label for="savings-saved" data-money-label="Sumă de adăugat"><span data-i18n="Sumă de adăugat (RON)">Sumă de adăugat (RON)</span></label><input id="savings-saved" type="number" min="0.01" step="0.01" placeholder="100" aria-describedby="savings-status" required disabled /></div>
+              <button id="savings-add-button" type="submit" class="primary-button" disabled><span data-i18n="Adaugă la economii">Adaugă la economii</span></button>
+            </form>
+            <p id="savings-status" class="student-note" role="status"></p>
+            <div class="goal-card" aria-live="polite"><strong id="savings-title"><span data-i18n="Setează primul tău obiectiv">Setează primul tău obiectiv</span></strong><p id="savings-progress-text" class="student-note"><span data-i18n="Progresul tău va apărea aici.">Progresul tău va apărea aici.</span></p><div id="savings-progress" class="goal-progress" role="progressbar" aria-label="Progres economii" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-i18n-aria-label="Progres economii"><span id="savings-progress-fill" style="width: 0%"></span></div></div>
+            <p class="student-note"><span data-i18n="Fiecare sumă adăugată la economii se scade din veniturile disponibile în luna adăugării.">Fiecare sumă adăugată la economii se scade din veniturile disponibile în luna adăugării.</span></p>
+          </section>
+          <section class="panel badges-panel" aria-labelledby="badges-title">
+            <div class="panel-heading"><span class="icon-box" aria-hidden="true">✦</span><h3 id="badges-title"><span data-i18n="Micile tale reușite">Micile tale reușite</span></h3></div>
+            <p class="student-note"><span data-i18n="Fiecare pas contează. Fără clasamente și fără penalizări.">Fiecare pas contează. Fără clasamente și fără penalizări.</span></p>
+            <nav class="achievement-pager" aria-label="Navigare între reușite" data-i18n-aria-label="Navigare între reușite">
+              <button id="achievements-prev" class="achievement-page-button" type="button" aria-label="Reușitele anterioare" aria-controls="achievement-list" disabled data-i18n-aria-label="Reușitele anterioare"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>
+              <p id="achievements-page-status" role="status" aria-live="polite" aria-atomic="true"></p>
+              <button id="achievements-next" class="achievement-page-button" type="button" aria-label="Următoarele reușite" aria-controls="achievement-list" data-i18n-aria-label="Următoarele reușite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg></button>
+            </nav>
+            <div id="achievement-list" class="achievement-list"></div>
+          </section>
+        </main>
+        <main class="page-view" data-view="settings">
+          <div class="settings-grid">
+            <section class="panel profile-panel" aria-labelledby="profile-title">
+              <div class="panel-heading"><span class="icon-box" aria-hidden="true">👤</span><h3 id="profile-title"><span data-i18n="Profilul meu">Profilul meu</span></h3></div>
+              <div class="profile-summary"><span class="profile-avatar" aria-hidden="true"><img id="profile-photo" class="avatar-photo hidden" alt="" width="80" height="80" /><span id="profile-initial"></span></span><div><strong id="profile-display-name"></strong><p id="profile-display-email" class="student-note"></p></div></div>
+              <div class="profile-photo-controls">
+                <label for="choose-profile-photo"><span data-i18n="Poza de profil">Poza de profil</span></label>
+                <input id="profile-photo-input" type="file" accept="image/jpeg,image/png,image/webp" hidden />
+                <button id="choose-profile-photo" class="primary-button profile-upload-button" type="button" aria-describedby="profile-photo-help"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" /><circle cx="8" cy="8" r="1.5" /><path d="m3 17 6-6 4 4 3-3 5 5" /></svg><span data-i18n="Alege poza">Alege poza</span></button>
+                <p id="profile-photo-help" class="student-note"><span data-i18n="Alege o imagine JPG, PNG sau WebP (maximum 5 MB). Deplasează poza și ajustează zoomul înainte de salvare.">Alege o imagine JPG, PNG sau WebP (maximum 5 MB). Deplasează poza și ajustează zoomul înainte de salvare.</span></p>
+                <button id="remove-profile-photo" class="secondary-button hidden" type="button"><span data-i18n="Elimină poza">Elimină poza</span></button>
+                <p id="profile-photo-status" class="student-note" role="status"></p>
+              </div>
+              <form id="profile-form" class="student-form">
+                <div class="field-group"><label for="profile-name"><span data-i18n="Nume">Nume</span></label><input id="profile-name" type="text" maxlength="80" autocomplete="name" required /></div>
+                <div class="field-group"><label for="profile-email"><span data-i18n="Emailul contului">Emailul contului</span></label><input id="profile-email" type="email" readonly /></div>
+                <div class="field-group"><label for="profile-university"><span data-i18n="Universitate / facultate (opțional)">Universitate / facultate (opțional)</span></label><input id="profile-university" type="text" maxlength="120" placeholder="Universitatea și facultatea ta"  data-i18n-placeholder="Universitatea și facultatea ta"/></div>
+                <div class="field-group"><label id="study-year-label" for="study-year-button"><span data-i18n="An de studiu (opțional)">An de studiu (opțional)</span></label><select id="profile-study-year" hidden><option data-i18n="Alege anul" value="">Alege anul</option><option data-i18n="Anul I" value="1">Anul I</option><option data-i18n="Anul II" value="2">Anul II</option><option data-i18n="Anul III" value="3">Anul III</option><option data-i18n="Anul IV" value="4">Anul IV</option><option data-i18n="Anul V" value="5">Anul V</option><option data-i18n="Anul VI" value="6">Anul VI</option><option data-i18n="Master" value="master">Master</option><option data-i18n="Doctorat" value="doctorat">Doctorat</option></select><button id="study-year-button" class="date-field-button study-year-button" type="button" aria-haspopup="dialog" aria-controls="study-year-picker" aria-expanded="false" aria-labelledby="study-year-label study-year-value"><span id="study-year-value"><span data-i18n="Alege anul">Alege anul</span></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button></div>
+                <button type="submit" class="primary-button"><span data-i18n="Salvează profilul">Salvează profilul</span></button>
+              </form>
+              <p id="profile-status" class="student-note" role="status"></p>
+              <div class="profile-session-actions">
+                <button id="logout-button" type="button" class="secondary-button"><span data-i18n="Ieși din cont">Ieși din cont</span></button>
+              </div>
+            </section>
+            <section class="panel settings-panel" aria-labelledby="settings-title">
+              <div class="language-control"><label id="settings-language-label" for="settings-language" data-i18n="Limbă">Limbă</label><select id="settings-language" data-language-choice><option value="ro">Română</option><option value="en">English</option><option value="fr">Français</option><option value="ru">Русский</option></select><button id="settings-language-button" class="date-field-button study-year-button" type="button" data-language-trigger="settings-language" aria-haspopup="dialog" aria-controls="language-picker" aria-expanded="false" aria-labelledby="settings-language-label settings-language-value" hidden><span id="settings-language-value" class="language-field-value">Română</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button></div>
+              <div class="panel-heading"><span class="icon-box" aria-hidden="true">⚙️</span><h3 id="settings-title"><span data-i18n="Setări">Setări</span></h3></div>
+              <form id="currency-form">
+                <div class="field-group"><label id="currency-label" for="currency-button"><span data-i18n="Valuta pentru bugetul tău">Valuta pentru bugetul tău</span></label><select id="settings-currency" hidden><option data-i18n="RON — Leu românesc" value="RON">RON — Leu românesc</option><option data-i18n="EUR — Euro" value="EUR">EUR — Euro</option><option data-i18n="USD — Dolar american" value="USD">USD — Dolar american</option><option data-i18n="GBP — Liră sterlină" value="GBP">GBP — Liră sterlină</option><option data-i18n="CHF — Franc elvețian" value="CHF">CHF — Franc elvețian</option></select><button id="currency-button" class="date-field-button study-year-button" type="button" aria-haspopup="dialog" aria-controls="currency-picker" aria-expanded="false" aria-labelledby="currency-label currency-value"><span id="currency-value"><span data-i18n="RON — Leu românesc">RON — Leu românesc</span></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button></div>
+                <p class="student-note"><span data-i18n="Valuta aleasă se folosește pentru noile sume și pentru afișarea bugetului, cheltuielilor și economiilor în acea monedă.">Valuta aleasă se folosește pentru noile sume și pentru afișarea bugetului, cheltuielilor și economiilor în acea monedă.</span></p>
+                <p class="student-note"><span data-i18n="Sumele deja salvate își păstrează valuta. Nu se face conversie automată; poți reveni la moneda lor ca să le vezi.">Sumele deja salvate își păstrează valuta. Nu se face conversie automată; poți reveni la moneda lor ca să le vezi.</span></p>
+                <button type="submit" class="primary-button"><span data-i18n="Salvează valuta">Salvează valuta</span></button>
+              </form>
+              <p id="currency-status" class="student-note" role="status"></p>
+              <fieldset class="theme-settings">
+                <legend><span data-i18n="Tema ta Hopper">Tema ta Hopper</span></legend>
+                <div class="theme-options" role="group" aria-label="Alege tema" data-i18n-aria-label="Alege tema">
+                  <button type="button" class="theme-option" data-theme-choice="garden" aria-pressed="true"><span class="theme-swatches garden" aria-hidden="true"><i></i><i></i><i></i></span><strong><span data-i18n="Grădină pastel">Grădină pastel</span></strong><small><span data-i18n="Roz, mentă și flori">Roz, mentă și flori</span></small></button>
+                  <button type="button" class="theme-option" data-theme-choice="peach" aria-pressed="false"><span class="theme-swatches peach" aria-hidden="true"><i></i><i></i><i></i></span><strong><span data-i18n="Apus piersică">Apus piersică</span></strong><small><span data-i18n="Cald și luminos">Cald și luminos</span></small></button>
+                  <button type="button" class="theme-option" data-theme-choice="night" aria-pressed="false"><span class="theme-swatches night" aria-hidden="true"><i></i><i></i><i></i></span><strong><span data-i18n="Noapte lila">Noapte lila</span></strong><small><span data-i18n="Un cer mov, liniștit">Un cer mov, liniștit</span></small></button>
+                </div>
+                <p id="theme-status" class="student-note" role="status"><span data-i18n="Tema se salvează automat pentru contul tău.">Tema se salvează automat pentru contul tău.</span></p>
+              </fieldset>
+              <div id="achievement-sound-settings" class="achievement-sound-settings" hidden>
+                <label class="achievement-sound-toggle"><input id="achievement-sound-enabled" type="checkbox" role="switch" checked /><span data-i18n="Sunete pentru reușite">Sunete pentru reușite</span></label>
+                <p class="student-note" data-i18n="Un clinchet jucăuș când deblochezi o reușită.">Un clinchet jucăuș când deblochezi o reușită.</p>
+                <button id="achievement-sound-preview" type="button" class="secondary-button" data-i18n="Ascultă sunetul">Ascultă sunetul</button>
+              </div>
+              <div class="settings-data-note" hidden><strong data-i18n="Sincronizare între dispozitive">Sincronizare între dispozitive</strong><p class="student-note" data-i18n="Conectează același cont online pe telefon și calculator. Poza de profil rămâne doar pe acest dispozitiv.">Conectează același cont online pe telefon și calculator. Poza de profil rămâne doar pe acest dispozitiv.</p><p id="sync-status" class="student-note" role="status" aria-live="polite"></p><button type="button" class="secondary-button" data-open-cloud data-i18n="Cont sincronizat">Cont sincronizat</button><button id="sync-now" type="button" class="secondary-button" hidden data-i18n="Sincronizează acum">Sincronizează acum</button><button id="sync-disconnect" type="button" class="secondary-button" hidden data-i18n="Oprește sincronizarea pe acest dispozitiv">Oprește sincronizarea pe acest dispozitiv</button></div>
+            </section>
+            <section class="panel problem-report-panel" aria-labelledby="problem-section-title">
+              <div class="panel-heading"><span class="icon-box problem-report-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false" shape-rendering="crispEdges"><path class="report-envelope-outline" d="M4 5h16v2h2v12h-2v2H4v-2H2V7h2Z"/><path class="report-envelope-paper" d="M4 7h16v12H4Z"/><path class="report-envelope-fold" d="M4 7h2v2h2v2h2v2h4v-2h2V9h2V7h2v2h-2v2h-2v2h-2v2h-4v-2H8v-2H6V9H4Z"/></svg></span><h3 id="problem-section-title" data-i18n="Raportează o problemă">Raportează o problemă</h3></div>
+              <p class="student-note" data-i18n="Ceva nu funcționează? Trimite-ne detalii ca să putem rezolva problema.">Ceva nu funcționează? Trimite-ne detalii ca să putem rezolva problema.</p>
+              <button type="button" class="secondary-button" data-open-problem-report aria-haspopup="dialog" aria-controls="problem-report-dialog" aria-expanded="false" data-i18n="Scrie-ne">Scrie-ne</button>
+            </section>
+          </div>
+        </main>
+        <section id="sync-conflict" class="panel" hidden data-sync-hidden aria-labelledby="sync-conflict-title"><h3 id="sync-conflict-title" data-i18n="Verifică modificările simultane">Verifică modificările simultane</h3><p data-i18n="Doar câmpurile în conflict vor folosi versiunea aleasă. Descarcă ambele versiuni înainte de alegere dacă vrei o copie.">Doar câmpurile în conflict vor folosi versiunea aleasă. Descarcă ambele versiuni înainte de alegere dacă vrei o copie.</p><div class="cloud-actions"><button id="sync-export-conflict" type="button" class="secondary-button" data-i18n="Descarcă ambele versiuni">Descarcă ambele versiuni</button><button id="sync-use-local" type="button" class="secondary-button" data-i18n="Păstrează versiunea acestui dispozitiv">Păstrează versiunea acestui dispozitiv</button><button id="sync-use-remote" type="button" class="secondary-button" data-i18n="Păstrează versiunea online">Păstrează versiunea online</button></div></section>
+        <p class="local-data-note"><span data-i18n="Datele tale se păstrează în aplicație, pe acest dispozitiv.">Datele tale se păstrează în aplicație, pe acest dispozitiv.</span></p>
+      </div>
+      <div id="expense-notification" class="expense-notification" role="status" aria-live="polite" aria-atomic="true"></div>
+      <div id="achievement-notification" class="achievement-notification" role="status" aria-live="polite" aria-atomic="true">
+        <span id="achievement-notification-icon" class="achievement-icon" aria-hidden="true"></span>
+        <div><strong><span data-i18n="Reușită deblocată!">Reușită deblocată!</span></strong><p id="achievement-notification-message"></p></div>
+      </div>
+    </div>
+
+    <dialog id="date-picker" class="date-picker" aria-labelledby="date-picker-title">
+      <div class="date-picker-titlebar"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><strong id="date-picker-title"><span data-i18n="Alege data">Alege data</span></strong><button id="date-picker-close" class="picker-close" type="button" aria-label="Închide calendarul" data-i18n-aria-label="Închide calendarul">×</button></div>
+      <div class="date-picker-body">
+        <div class="calendar-header"><button id="date-picker-prev" class="calendar-nav" type="button" aria-label="Luna precedentă" data-i18n-aria-label="Luna precedentă">‹</button><strong id="date-picker-month" aria-live="polite"></strong><button id="date-picker-next" class="calendar-nav" type="button" aria-label="Luna următoare" data-i18n-aria-label="Luna următoare">›</button></div>
+        <div class="calendar-weekdays" aria-hidden="true"><span>Lu</span><span>Ma</span><span>Mi</span><span>Jo</span><span>Vi</span><span>Sâ</span><span>Du</span></div>
+        <div id="date-picker-days" class="date-picker-days" role="group" aria-label="Alege ziua" data-i18n-aria-label="Alege ziua"></div>
+        <div class="date-picker-actions"><button id="date-picker-today" class="primary-button" type="button"><span data-i18n="Azi">Azi</span></button><button id="date-picker-cancel" class="secondary-button" type="button"><span data-i18n="Anulează">Anulează</span></button></div>
+      </div>
+    </dialog>
+    <dialog id="transaction-editor" class="date-picker feature-dialog" aria-labelledby="transaction-editor-title">
+      <div class="date-picker-titlebar"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><strong id="transaction-editor-title"><span data-i18n="Modifică înregistrarea">Modifică înregistrarea</span></strong><button class="picker-close" type="button" data-close-dialog="transaction-editor" aria-label="Închide modificarea" data-i18n-aria-label="Închide modificarea">×</button></div>
+      <div class="date-picker-body">
+        <p id="edit-currency" class="currency-badge"></p>
+        <form id="transaction-edit-form">
+          <div class="field-group"><label id="edit-description-label" for="edit-description"><span data-i18n="Ce ai cumpărat?">Ce ai cumpărat?</span></label><input id="edit-description" type="text" maxlength="200" required /></div>
+          <div class="field-group"><label id="edit-amount-label" for="edit-amount"><span data-i18n="Sumă">Sumă</span></label><input id="edit-amount" type="number" min="0.01" step="0.01" required /></div>
+          <div id="edit-category-group" class="field-group"><label for="edit-category"><span data-i18n="Categorie">Categorie</span></label><select id="edit-category"><option data-i18n="Mâncare" value="Food">Mâncare</option><option data-i18n="Cămin / chirie" value="Housing">Cămin / chirie</option><option data-i18n="Transport" value="Transport">Transport</option><option data-i18n="Facultate / cursuri" value="Education">Facultate / cursuri</option><option data-i18n="Facturi / abonamente" value="Bills">Facturi / abonamente</option><option data-i18n="Timp liber" value="Entertainment">Timp liber</option><option data-i18n="Sănătate" value="Health">Sănătate</option><option data-i18n="Altele" value="Other">Altele</option></select></div>
+          <div class="field-group"><label for="edit-date"><span data-i18n="Data">Data</span></label><input id="edit-date" type="date" required /></div>
+          <p id="edit-status" class="student-note" role="alert"></p>
+          <div class="date-picker-actions"><button type="submit" class="primary-button"><span data-i18n="Salvează modificările">Salvează modificările</span></button><button type="button" class="secondary-button" data-close-dialog="transaction-editor"><span data-i18n="Anulează">Anulează</span></button></div>
+        </form>
+      </div>
+    </dialog>
+    <dialog id="day-details" class="date-picker feature-dialog" aria-labelledby="day-details-title">
+      <div class="date-picker-titlebar"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><strong id="day-details-title"><span data-i18n="Ziua ta în cifre">Ziua ta în cifre</span></strong><button class="picker-close" type="button" data-close-dialog="day-details" aria-label="Închide detaliile zilei" data-i18n-aria-label="Închide detaliile zilei">×</button></div>
+      <div class="date-picker-body">
+        <div id="day-details-summary" class="day-summary"></div>
+        <ul id="day-details-list" class="tracker-list day-transactions"></ul>
+        <p id="day-expense-date-note" class="student-note" data-i18n="Cheltuiala nu poate avea o dată viitoare. Alege azi sau o zi din trecut." hidden>Cheltuiala nu poate avea o dată viitoare. Alege azi sau o zi din trecut.</p>
+        <button id="day-add-expense" class="primary-button" type="button" aria-describedby="day-expense-date-note"><span data-i18n="Adaugă o cheltuială în această zi">Adaugă o cheltuială în această zi</span></button>
+      </div>
+    </dialog>
+    <dialog id="study-year-picker" class="date-picker study-year-picker" aria-labelledby="study-year-picker-title">
+      <div class="date-picker-titlebar"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><strong id="study-year-picker-title"><span data-i18n="An de studiu">An de studiu</span></strong><button id="study-year-close" class="picker-close" type="button" aria-label="Închide lista anilor de studiu" data-i18n-aria-label="Închide lista anilor de studiu">×</button></div>
+      <div class="date-picker-body"><div id="study-year-options" class="study-year-options" role="group" aria-label="Alege anul de studiu" data-i18n-aria-label="Alege anul de studiu"></div></div>
+    </dialog>
+    <dialog id="expense-category-picker" class="date-picker study-year-picker" aria-labelledby="expense-category-picker-title">
+      <div class="date-picker-titlebar"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><strong id="expense-category-picker-title" data-i18n="Alege o categorie">Alege o categorie</strong><button id="expense-category-close" class="picker-close" type="button" aria-label="Închide" data-i18n-aria-label="Închide">×</button></div>
+      <div class="date-picker-body"><div id="expense-category-options" class="study-year-options" role="group" aria-labelledby="expense-category-picker-title"></div></div>
+    </dialog>
+    <dialog id="income-source-picker" class="date-picker study-year-picker" aria-labelledby="income-source-picker-title">
+      <div class="date-picker-titlebar"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><strong id="income-source-picker-title" data-i18n="Alege sursa venitului">Alege sursa venitului</strong><button id="income-source-close" class="picker-close" type="button" aria-label="Închide" data-i18n-aria-label="Închide">×</button></div>
+      <div class="date-picker-body"><div id="income-source-options" class="study-year-options" role="group" aria-labelledby="income-source-picker-title"></div></div>
+    </dialog>
+    <dialog id="currency-picker" class="date-picker" aria-labelledby="currency-picker-title">
+      <div class="date-picker-titlebar"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><strong id="currency-picker-title"><span data-i18n="Alege valuta">Alege valuta</span></strong><button id="currency-close" class="picker-close" type="button" aria-label="Închide lista valutelor" data-i18n-aria-label="Închide lista valutelor">×</button></div>
+      <div class="date-picker-body"><div id="currency-options" class="study-year-options" role="group" aria-label="Alege valuta pentru bugetul tău" data-i18n-aria-label="Alege valuta pentru bugetul tău"></div></div>
+    </dialog>
+    <dialog id="language-picker" class="date-picker study-year-picker" aria-labelledby="language-picker-title">
+      <div class="date-picker-titlebar"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><strong id="language-picker-title" data-i18n="Limbă">Limbă</strong><button id="language-close" class="picker-close" type="button" aria-label="Închide" data-i18n-aria-label="Închide">×</button></div>
+      <div class="date-picker-body"><div id="language-options" class="study-year-options" role="group" aria-labelledby="language-picker-title"></div></div>
+    </dialog>
+    <dialog id="photo-crop-dialog" class="date-picker feature-dialog" aria-labelledby="photo-crop-title">
+      <div class="date-picker-titlebar"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><strong id="photo-crop-title" data-i18n="Așază poza de profil">Așază poza de profil</strong><button class="picker-close" type="button" data-cancel-photo-crop aria-label="Închide" data-i18n-aria-label="Închide">×</button></div>
+      <div class="date-picker-body">
+        <p class="student-note" data-i18n="Deplasează poza cu degetul sau cu săgețile și ajustează zoomul. Cercul arată ce se va vedea la profil.">Deplasează poza cu degetul sau cu săgețile și ajustează zoomul. Cercul arată ce se va vedea la profil.</p>
+        <div id="photo-crop-stage" class="photo-crop-stage" tabindex="0" aria-label="Deplasează poza cu săgețile" data-i18n-aria-label="Deplasează poza cu săgețile"><img id="photo-crop-preview" alt="" draggable="false" /></div>
+        <div class="photo-crop-controls">
+          <label for="photo-crop-zoom" data-i18n="Zoom">Zoom</label><input id="photo-crop-zoom" type="range" min="1" max="3" step="0.05" value="1" />
+          <div class="photo-crop-positions"><div><label for="photo-crop-x" data-i18n="Stânga / dreapta">Stânga / dreapta</label><input id="photo-crop-x" type="range" min="0" max="100" step="1" value="50" /></div><div><label for="photo-crop-y" data-i18n="Sus / jos">Sus / jos</label><input id="photo-crop-y" type="range" min="0" max="100" step="1" value="50" /></div></div>
+        </div>
+        <div class="photo-crop-actions"><button id="photo-crop-center" type="button" class="secondary-button" data-i18n="Recentrează">Recentrează</button><button id="photo-crop-save" type="button" class="primary-button" data-i18n="Salvează poza">Salvează poza</button></div>
+        <p id="photo-crop-status" class="student-note" role="status"></p>
+      </div>
+    </dialog>
+    <dialog id="problem-report-dialog" class="date-picker feature-dialog" aria-labelledby="problem-report-title">
+      <div class="date-picker-titlebar"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><strong id="problem-report-title" data-i18n="Raportează o problemă">Raportează o problemă</strong><button id="problem-report-close" class="picker-close" type="button" aria-label="Închide" data-i18n-aria-label="Închide">×</button></div>
+      <div class="date-picker-body">
+        <p class="student-note" data-i18n="Descrie problema și ce ai făcut înainte să apară.">Descrie problema și ce ai făcut înainte să apară.</p>
+        <form id="problem-report-form">
+          <div class="field-group"><label for="problem-summary" data-i18n="Problema, pe scurt">Problema, pe scurt</label><input id="problem-summary" type="text" maxlength="120" required /></div>
+          <div class="field-group"><label for="problem-description" data-i18n="Ce s-a întâmplat?">Ce s-a întâmplat?</label><textarea id="problem-description" rows="4" maxlength="2000" aria-describedby="problem-report-help" required></textarea></div>
+          <div class="field-group"><button id="choose-problem-evidence" type="button" class="secondary-button evidence-add-button" data-i18n="Adaugă poze sau clipuri">Adaugă poze sau clipuri</button><input id="problem-evidence" type="file" hidden accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" multiple aria-describedby="problem-evidence-help" /><p id="problem-evidence-help" class="student-note" data-i18n="Maximum 3 fișiere și 20 MB în total. Poze: până la 5 MB; clipuri: până la 15 MB.">Maximum 3 fișiere și 20 MB în total. Poze: până la 5 MB; clipuri: până la 15 MB.</p><ul id="problem-evidence-list" class="evidence-list"></ul></div>
+          <p id="problem-report-help" class="student-note" data-i18n="Se trimit doar descrierea, fișierele alese de tine și versiunea aplicației. Nu include parole sau alte informații private.">Se trimit doar descrierea, fișierele alese de tine și versiunea aplicației. Nu include parole sau alte informații private.</p>
+          <button id="problem-report-submit" type="submit" class="primary-button" data-i18n="Trimite raportul">Trimite raportul</button>
+        </form>
+        <p id="problem-report-status" class="student-note" role="status" aria-live="polite" aria-atomic="true"></p>
+      </div>
+    </dialog>
+<dialog id="cloud-dialog" class="date-picker feature-dialog" aria-labelledby="cloud-title">
+      <div class="date-picker-titlebar"><strong id="cloud-title" data-i18n="Cont sincronizat">Cont sincronizat</strong><button id="cloud-close" class="picker-close" type="button" aria-label="Închide" data-i18n-aria-label="Închide">×</button></div>
+      <div class="date-picker-body">
+        <p data-i18n="Folosește același cont online pe ambele dispozitive. Conturile locale nu sunt încă online.">Folosește același cont online pe ambele dispozitive. Conturile locale nu sunt încă online.</p>
+        <form id="cloud-form">
+          <div class="field-group"><label for="cloud-name" data-i18n="Nume">Nume</label><input id="cloud-name" type="text" maxlength="80" autocomplete="name" /></div>
+          <div class="field-group"><label for="cloud-email" data-i18n="Email">Email</label><input id="cloud-email" type="email" autocomplete="username" required /></div>
+          <div class="field-group"><label for="cloud-password" data-i18n="Parolă">Parolă</label><input id="cloud-password" type="password" minlength="8" autocomplete="current-password" required /></div>
+          <label class="cloud-import-choice"><input id="cloud-import" type="checkbox" /><span data-i18n="Adaugă și datele contului local cu acest email">Adaugă și datele contului local cu acest email</span></label>
+          <p class="student-note" data-i18n="Datele locale se adaugă fără să înlocuiască datele online. Dacă există neconcordanțe, sincronizarea se oprește pentru verificare.">Datele locale se adaugă fără să înlocuiască datele online. Dacă există neconcordanțe, sincronizarea se oprește pentru verificare.</p>
+          <div class="cloud-actions"><button id="cloud-login" class="primary-button" type="submit" data-i18n="Conectează contul online">Conectează contul online</button><button id="cloud-register" class="secondary-button" type="submit" data-i18n="Creează cont online">Creează cont online</button></div>
+          <p id="cloud-status" role="status" aria-live="polite" class="student-note"></p>
+        </form>
+      </div>
+    </dialog>
+    <dialog id="category-manager" class="date-picker study-year-picker category-manager" aria-labelledby="category-manager-title" aria-describedby="category-manager-help">
+      <div class="date-picker-titlebar"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><h2 id="category-manager-title" data-i18n="Categorii de cheltuieli">Categorii de cheltuieli</h2><button class="picker-close" type="button" data-close-dialog="category-manager" aria-label="Închide" data-i18n-aria-label="Închide">×</button></div>
+      <div class="category-manager-body">
+        <p id="category-manager-help" class="student-note" data-i18n="Eliminarea unei categorii păstrează cheltuielile existente.">Eliminarea unei categorii păstrează cheltuielile existente.</p>
+        <ul id="category-manager-list" class="category-manager-list"></ul>
+        <p id="category-manager-empty" class="student-note" hidden data-i18n="Nu mai ai categorii disponibile. Adaugă una sau restabilește categoriile.">Nu mai ai categorii disponibile. Adaugă una sau restabilește categoriile.</p>
+        <button id="restore-categories" class="secondary-button" type="button" data-i18n="Restabilește categoriile">Restabilește categoriile</button>
+        <p id="category-manager-status" class="student-note" role="status" aria-live="polite"></p>
+      </div>
+    </dialog>
+    </div>
+  </body>
+</html>

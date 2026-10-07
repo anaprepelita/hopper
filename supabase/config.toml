@@ -1,0 +1,2 @@
+[functions.report-problem]
+verify_jwt = false

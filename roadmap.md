@@ -1,0 +1,8 @@
+- [x] Keep authentication static and preserve the original pixel animal illustrations.
+- [x] Provide Romanian, English, French and Russian interfaces.
+- [x] Prepare Android/iOS projects with local resources and native-only startup.
+- [x] Verify financial behavior and native launch/back handling through automated tests.
+- [ ] Compile and test on Android devices with Android Studio/SDK.
+- [ ] Compile and test on iPhone with a Mac and Xcode.
+- [ ] Configure and verify a real Supabase project for cross-device synchronization.
+- [ ] Prepare signed store releases after explicit authorization.

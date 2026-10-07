@@ -1,0 +1,16 @@
+# Copy to signing.properties locally. This file is a template, not a working key.
+# Use forward slashes in absolute Windows paths. Never commit keys/passwords.
+# app* signs the APK distributed directly to users.
+appStoreFile=C:/Keys/hopper-app.jks
+appStorePassword=REPLACE_LOCALLY
+appKeyAlias=hopper
+appKeyPassword=REPLACE_LOCALLY
+
+# Optional separate upload key for Google Play AABs.
+# If all upload* values are omitted, the AAB uses the app* key.
+# Google Play's APP SIGNING certificate must match the directly distributed APK.
+# An upload certificate alone does not establish that match.
+# uploadStoreFile=C:/Keys/hopper-upload.jks
+# uploadStorePassword=REPLACE_LOCALLY
+# uploadKeyAlias=hopper-upload
+# uploadKeyPassword=REPLACE_LOCALLY

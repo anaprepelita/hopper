@@ -1,0 +1,341 @@
+/* Safe areas and phone controls inside the native Capacitor WebView. */
+.hopper-native .auth-screen,
+.hopper-native .app-screen {
+  padding-top: calc(24px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
+  padding-right: calc(24px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)));
+  padding-bottom: calc(24px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  padding-left: calc(24px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
+}
+
+.hopper-native dialog {
+  max-height: calc(
+    100dvh - 32px - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) -
+      var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+  );
+  overflow-y: auto;
+}
+
+.hopper-native .expense-notification {
+  bottom: calc(24px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+}
+
+.hopper-native .achievement-notification {
+  right: calc(16px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)));
+  bottom: calc(96px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+}
+
+@media (max-width: 720px) {
+  .hopper-native .auth-screen,
+  .hopper-native .app-screen {
+    padding-right: calc(12px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)));
+    padding-left: calc(12px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
+  }
+
+  .hopper-native input,
+  .hopper-native select,
+  .hopper-native textarea {
+    font-size: max(1rem, 16px);
+  }
+}
+/* The interface is exposed only after the native bootstrap loads its resources. */
+#native-interface[hidden],
+#native-launch-status[hidden] {
+  display: none !important;
+}
+.native-launch {
+  min-height: 100svh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 20px;
+  padding: 32px;
+  text-align: center;
+}
+.native-launch h1 {
+  font-size: 1.4rem;
+}
+.native-launch p {
+  max-width: 320px;
+}
+.native-launch button {
+  width: auto;
+}
+
+/* Phone layout: existing screens and retro identity, with a native navigation dock. */
+.hopper-native .navigation-icon {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .hopper-native {
+    --phone-dock-height: 84px;
+    --phone-bottom-inset: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  }
+  .hopper-native body {
+    background-image: radial-gradient(var(--w-grid) 1px, transparent 1px) !important;
+    background-size: 24px 24px !important;
+  }
+  .hopper-native .app-screen {
+    padding: var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
+      var(--safe-area-inset-right, env(safe-area-inset-right, 0px))
+      calc(var(--phone-dock-height) + var(--phone-bottom-inset) + 20px)
+      var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+  }
+  .hopper-native .dashboard-shell {
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    overflow: visible;
+  }
+  .hopper-native .topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding: 16px 16px 12px;
+    border-bottom: 0;
+    background: transparent;
+  }
+  .hopper-native .topbar > div:first-child {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+  .hopper-native .topbar h1 {
+    order: -1;
+    max-width: calc(100% - 80px);
+    font-size: 1.15rem !important;
+    min-height: 64px;
+    gap: 8px;
+  }
+  .hopper-native .topbar .welcome-text {
+    max-width: 100%;
+    margin: 10px 0 0;
+    font-size: 1.15rem;
+  }
+  .hopper-native .topbar .student-intro {
+    max-width: 100%;
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .hopper-native .topbar .currency-badge {
+    margin: 8px 0 0;
+    font-size: 0.75rem;
+  }
+  .hopper-native .header-profile-button {
+    top: 16px;
+    right: 16px;
+    width: 64px;
+    height: 64px;
+    font-size: 1.55rem;
+  }
+  .hopper-native .achievement-companion {
+    justify-self: end;
+    width: min(100%, 300px);
+    grid-template-columns: minmax(0, 1fr) 56px;
+    gap: 10px;
+    margin: 4px 0 0;
+  }
+  .hopper-native .companion-bunny {
+    width: 56px;
+    height: 56px;
+  }
+  .hopper-native .companion-bubble {
+    padding: 8px 10px;
+  }
+  .hopper-native #companion-message {
+    font-size: 0.75rem;
+  }
+  /* The greeting remains on Budget; other tabs use the compact brand/profile bar. */
+  .hopper-native[data-native-view]:not([data-native-view="home"]) .topbar .welcome-text,
+  .hopper-native[data-native-view]:not([data-native-view="home"]) .topbar .student-intro,
+  .hopper-native[data-native-view]:not([data-native-view="home"]) .topbar .currency-badge,
+  .hopper-native[data-native-view]:not([data-native-view="home"]) .achievement-companion {
+    display: none;
+  }
+  .hopper-native .view-tabs {
+    position: fixed;
+    z-index: 90;
+    inset: auto 0 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 4px;
+    min-height: calc(var(--phone-dock-height) + var(--phone-bottom-inset));
+    padding: 8px max(8px, var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))
+      calc(8px + var(--phone-bottom-inset))
+      max(8px, var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
+    border-top: 1px solid var(--w-lilac);
+    border-radius: 20px 20px 0 0;
+    background: var(--w-cream);
+    box-shadow: 0 -4px 18px rgba(74, 44, 80, 0.08);
+  }
+  .hopper-native .view-tabs .view-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 66px;
+    padding: 4px 2px;
+    border: 0 !important;
+    border-radius: 14px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--muted);
+    font-size: 0.7rem;
+    line-height: 1.25;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .hopper-native .view-tab > span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5em;
+    max-width: 100%;
+    text-align: center;
+  }
+  .hopper-native .view-tab .navigation-icon {
+    display: block;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .hopper-native .view-tabs .view-tab.active {
+    color: var(--w-deep);
+    background: var(--theme-tint-2) !important;
+  }
+  .hopper-native .view-tabs .view-tab:active {
+    transform: scale(0.96);
+  }
+  .hopper-native .view-tab:focus-visible {
+    outline: 2px dashed var(--w-deep);
+    outline-offset: -3px;
+  }
+  .hopper-native[data-keyboard-visible="true"] .view-tabs {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .hopper-native .page-view {
+    padding: 8px 16px 0;
+  }
+  .hopper-native .page-view[data-view="home"].active {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .hopper-native .page-view[data-view="home"] > .summary-panel {
+    order: -1;
+  }
+  .hopper-native .panel {
+    padding: 16px;
+    border-radius: 18px !important;
+    box-shadow: 2px 3px 0 rgba(156, 107, 168, 0.18) !important;
+  }
+  .hopper-native .panel::before {
+    display: none;
+  }
+  .hopper-native .panel-heading {
+    margin-bottom: 14px;
+    gap: 8px;
+  }
+  .hopper-native .summary-panel,
+  .hopper-native .expense-overview {
+    margin: 0;
+  }
+  .hopper-native .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .hopper-native .summary-item {
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 100px;
+    padding: 12px 10px;
+    border: 1px solid var(--w-lilac) !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+    font-size: 0.76rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+  .hopper-native .summary-item strong {
+    font-size: clamp(1rem, 4.2vw, 1.2rem);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.3;
+  }
+  .hopper-native .dashboard-grid,
+  .hopper-native .dashboard-main,
+  .hopper-native .dashboard-side {
+    gap: 16px;
+  }
+  .hopper-native .settings-grid {
+    gap: 16px;
+  }
+  .hopper-native .settings-grid > .panel,
+  .hopper-native .goals-screen,
+  .hopper-native .badges-panel {
+    margin-bottom: 16px;
+  }
+  .hopper-native .student-form {
+    gap: 14px;
+  }
+  .hopper-native .primary-button,
+  .hopper-native .date-field-button,
+  .hopper-native .student-form .secondary-button {
+    min-height: 50px;
+  }
+  .hopper-native input,
+  .hopper-native textarea {
+    scroll-margin-block: 100px;
+  }
+  .hopper-native .local-data-note {
+    margin: 16px 16px 0;
+    padding: 0;
+    font-size: 0.75rem;
+  }
+  .hopper-native .expense-notification {
+    bottom: calc(var(--phone-dock-height) + var(--phone-bottom-inset) + 12px);
+  }
+  .hopper-native .achievement-notification {
+    bottom: calc(var(--phone-dock-height) + var(--phone-bottom-inset) + 84px);
+  }
+  .hopper-native dialog.date-picker {
+    position: fixed;
+    inset: auto 0 0;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - 12px - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
+    padding-bottom: var(--phone-bottom-inset);
+    border-radius: 22px 22px 0 0;
+    border-bottom: 0;
+    box-shadow: 0 -8px 32px rgba(74, 44, 80, 0.15);
+    overscroll-behavior-y: contain;
+  }
+  .hopper-native .date-picker-titlebar {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .hopper-native .date-picker-body {
+    padding: 18px 16px;
+  }
+  .hopper-native .study-year-options {
+    max-height: min(420px, 55dvh);
+  }
+}
+
+.hopper-native .date-picker-titlebar strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

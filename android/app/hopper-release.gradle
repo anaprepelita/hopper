@@ -1,0 +1,66 @@
+// Private values stay in android/signing.properties or environment variables.
+def hopperSigning = new Properties()
+def hopperSigningFile = rootProject.file('signing.properties')
+if (hopperSigningFile.exists()) {
+    hopperSigningFile.withInputStream { hopperSigning.load(it) }
+}
+def signingValue = { String property, String environment ->
+    System.getenv(environment) ?: hopperSigning.getProperty(property, '')
+}
+def appKey = [
+    storeFile: signingValue('appStoreFile', 'HOPPER_APP_STORE_FILE'),
+    storePassword: signingValue('appStorePassword', 'HOPPER_APP_STORE_PASSWORD'),
+    keyAlias: signingValue('appKeyAlias', 'HOPPER_APP_KEY_ALIAS'),
+    keyPassword: signingValue('appKeyPassword', 'HOPPER_APP_KEY_PASSWORD')
+]
+def uploadKey = [
+    storeFile: signingValue('uploadStoreFile', 'HOPPER_UPLOAD_STORE_FILE'),
+    storePassword: signingValue('uploadStorePassword', 'HOPPER_UPLOAD_STORE_PASSWORD'),
+    keyAlias: signingValue('uploadKeyAlias', 'HOPPER_UPLOAD_KEY_ALIAS'),
+    keyPassword: signingValue('uploadKeyPassword', 'HOPPER_UPLOAD_KEY_PASSWORD')
+]
+// A partial upload-key configuration must not silently fall back to another key.
+if (!uploadKey.values().any { it }) uploadKey = appKey
+def distribution = providers.gradleProperty('hopperDistribution').getOrElse('apk')
+if (!(distribution in ['apk', 'play'])) {
+    throw new GradleException('hopperDistribution must be apk or play.')
+}
+
+android {
+    signingConfigs {
+        hopperApk {
+            if (appKey.storeFile) storeFile rootProject.file(appKey.storeFile)
+            storePassword appKey.storePassword
+            keyAlias appKey.keyAlias
+            keyPassword appKey.keyPassword
+        }
+        hopperPlay {
+            if (uploadKey.storeFile) storeFile rootProject.file(uploadKey.storeFile)
+            storePassword uploadKey.storePassword
+            keyAlias uploadKey.keyAlias
+            keyPassword uploadKey.keyPassword
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig distribution == 'play' ? signingConfigs.hopperPlay : signingConfigs.hopperApk
+            debuggable false
+        }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    if (graph.hasTask(':app:validateSigningRelease')) {
+        def nativeConfig = rootProject.file('app/src/main/assets/capacitor.config.json')
+        if (nativeConfig.exists() && new groovy.json.JsonSlurper().parse(nativeConfig).server?.url) {
+            throw new GradleException('Stop Live Reload and sync Android before building a release. Release packages must load local assets.')
+        }
+        def chosen = distribution == 'play' ? uploadKey : appKey
+        if (chosen.values().any { !it || it.contains('REPLACE_LOCALLY') }) {
+            throw new GradleException('Release signing is incomplete. Configure android/signing.properties locally; never send passwords in chat. See signing.properties.example.')
+        }
+        if (!rootProject.file(chosen.storeFile).isFile()) {
+            throw new GradleException('The configured release keystore does not exist.')
+        }
+    }
+}
