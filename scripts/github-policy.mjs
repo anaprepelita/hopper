@@ -1,12 +1,10 @@
-import { createHash } from "node:crypto";
-
 export const targetRemote = "student";
 export const targetUrl = "https://github.com/anaprepelita/hopper.git";
-export const quietPeriodMs = 10 * 60 * 1000;
 
 const rootFiles = new Set([
   ".gitignore",
   ".prettierignore",
+  ".prettierrc",
   ".env.example",
   ".env.reports.example",
   "AGENTS.md",
@@ -82,7 +80,7 @@ export function assertPublishablePath(path) {
 
 export function assertSafeContent(path, buffer) {
   if (buffer.length > 20 * 1024 * 1024)
-    throw new Error("File exceeds the automatic upload limit: " + path);
+    throw new Error("File exceeds the publishing check limit: " + path);
   if (buffer.includes(0)) return;
   const text = buffer.toString("utf8");
   if (secretPatterns.some((pattern) => pattern.test(text))) {
@@ -109,23 +107,4 @@ export function assertSafeContent(path, buffer) {
       throw new Error("Possible exported account data in: " + path);
     }
   }
-}
-
-export function fingerprint(records) {
-  const hash = createHash("sha256");
-  for (const record of [...records].sort((a, b) => a.path.localeCompare(b.path))) {
-    hash.update(record.path + "\0" + (record.hash ?? "deleted") + "\0");
-  }
-  return hash.digest("hex");
-}
-
-export function debounce(previous, nextFingerprint, now) {
-  if (!previous || previous.fingerprint !== nextFingerprint) {
-    return { fingerprint: nextFingerprint, changedAt: now, ready: false };
-  }
-  return {
-    fingerprint: nextFingerprint,
-    changedAt: previous.changedAt,
-    ready: now - previous.changedAt >= quietPeriodMs,
-  };
 }

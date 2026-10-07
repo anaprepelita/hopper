@@ -1,34 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-  assertPublishablePath,
-  assertSafeContent,
-  debounce,
-  fingerprint,
-  quietPeriodMs,
-} from "../scripts/github-policy.mjs";
+import { assertPublishablePath, assertSafeContent } from "../scripts/github-policy.mjs";
 
-describe("automatic GitHub publishing safeguards", () => {
-  it("waits ten minutes after the last saved change and resets after another edit", () => {
-    const first = debounce(null, "first", 1000);
-    expect(debounce(first, "first", 1000 + quietPeriodMs - 1).ready).toBe(false);
-    expect(debounce(first, "first", 1000 + quietPeriodMs).ready).toBe(true);
-    const edited = debounce(first, "second", 1000 + quietPeriodMs);
-    expect(edited.ready).toBe(false);
-    expect(debounce(edited, "second", edited.changedAt + quietPeriodMs).ready).toBe(true);
-  });
-
-  it("notices content changes and deletion, regardless of filename order", () => {
-    const before = [
-      { path: "mobile/app/script.js", hash: "one" },
-      { path: "README.md", hash: "two" },
-    ];
-    expect(fingerprint(before)).toBe(fingerprint([...before].reverse()));
-    expect(fingerprint(before)).not.toBe(
-      fingerprint([{ ...before[0]!, hash: "edited" }, before[1]!]),
-    );
-    expect(fingerprint(before)).not.toBe(fingerprint([{ ...before[0]!, hash: null }, before[1]!]));
-  });
-
+describe("manual GitHub publishing checks", () => {
   it("rejects signing keys, SDK installs, private exports and unknown locations", () => {
     for (const path of [
       ".env.local",
@@ -51,7 +24,7 @@ describe("automatic GitHub publishing safeguards", () => {
       "supabase/.env.example",
       "android/signing.properties.example",
       "mobile/app/index.html",
-      "scripts/github-push.mjs",
+      "scripts/github-check.mjs",
       "mobile/app/animals/bunny.png",
       "android/gradle/wrapper/gradle-wrapper.jar",
       "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",

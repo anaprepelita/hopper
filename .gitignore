@@ -42,5 +42,5 @@ supabase/.env.*
 
 # Local Android Studio installation
 /Android Pack/
-# Local GitHub automation state
+# Private local GitHub files
 .github-local/

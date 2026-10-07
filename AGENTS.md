@@ -52,4 +52,9 @@ The build includes local resource checks. Native SDK/device verification is addi
 ## Daily change journal
 
 - The user requested a daily record of additions and modifications. Maintain [CHANGELOG.md](CHANGELOG.md) with concise Romanian descriptions of actual features added, changed, fixed or removed while working on the project. Use the date in Europe/Bucharest, preserve earlier days and existing notes, and never include private values or user records.
-- The GitHub automation appends exact staged file changes to the same day's section before committing. Keep human descriptions alongside these automatic entries; do not invent completed features or create entries for days without changes. Do not edit existing automatic update IDs or duplicate their file lists manually.
+- Preserve earlier journal entries about the application. Remove obsolete publishing instructions when the user requests it. New entries are written manually alongside the work; do not invent completed features or create entries for days without changes.
+
+## Manual Git workflow
+
+- Commit and push are manual and controlled by the user. Leave changes unstaged for the user to review. Do not stage files, create commits, push, or restore scheduled GitHub tasks unless the user explicitly requests that action.
+- The optional `npm run github:check` command only reads staged changes for private-file checks. It must never stage, commit, push, or update the journal.

@@ -4,7 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "github:push": "node scripts/github-push.mjs --now",
+    "github:check": "node scripts/github-check.mjs",
     "sync:motion": "node scripts/sync-motion.mjs",
     "build": "npm run mobile:build && npm run mobile:check",
     "lint": "eslint .",

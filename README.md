@@ -322,33 +322,43 @@ Serverul verifică limitele și semnăturile fișierelor, limitează dimensiunea
 
 Nu există încă o sarcină automată de ștergere a dovezilor. Administratorul trebuie să configureze perioada de păstrare și monitorizarea rapoartelor eșuate înainte de publicarea pentru utilizatori.
 
-## GitHub: salvarea automată a modificărilor
+## GitHub: commit și push manual
 
-Proiectul este publicat în [anaprepelita/hopper](https://github.com/anaprepelita/hopper). Destinația Git `student` este folosită pentru Hopper; `origin` păstrează legătura veche. Commiturile noi, adică versiunile salvate în Git, folosesc adresa GitHub noreply a contului `anaprepelita`.
+Proiectul este publicat în [anaprepelita/hopper](https://github.com/anaprepelita/hopper). Destinația Git `student` este folosită pentru Hopper; `origin` păstrează legătura veche. Commiturile folosesc adresa GitHub noreply a contului `anaprepelita`.
 
-Pe acest calculator Windows, sarcina programată **Hopper-GitHub-AutoPush** verifică o dată pe minut modificările salvate. După **10 minute fără alte modificări**, rulează testele, verifică tipurile și regulile de cod, construiește pachetul, creează un commit și îl trimite pe ramura `main`.
+Commiturile și push-urile sunt manuale. Tu alegi ce modificări incluzi, mesajul commitului și momentul în care trimiți codul pe GitHub. Salvarea unui fișier în VS Code nu trimite nimic.
 
-Calculatorul trebuie să fie pornit, utilizatorul conectat și internetul disponibil. Automatizarea nu creează commituri goale și nu rescrie istoricul prin trimitere forțată. Dacă editezi în timpul verificărilor, așteaptă din nou. Dacă ai pregătit manual fișiere pentru un commit, termină-l înainte de automatizare.
-
-Fișierele de configurare privată, cheile de semnare, exporturile conturilor, pozele de profil, pachetele compilate și instalarea Android Studio sunt excluse. Fișierele noi din directoare sau formate neprevăzute opresc trimiterea până la verificare. Detectorul de secrete este o protecție suplimentară, nu o garanție: nu introduce parole sau date reale în cod. Exemplele de configurare conțin doar valori fictive.
-
-Pentru trimiterea imediată a modificărilor verificate, din terminalul proiectului:
+Deschide terminalul în proiect și verifică modificările:
 
 ```powershell
-npm.cmd run github:push
+git status
+git diff
 ```
 
-Jurnalul local al automatizării este în `.github-local/auto-push.log`, exclus din Git. Dacă verificările eșuează, corectează problema și salvează; automatizarea reîncearcă după pauză. Un commit creat înaintea unei erori de rețea rămâne local și trimiterea se reîncearcă. Pentru investigarea erorilor, rulează manual verificarea sau testul indicat.
-
-Pentru oprire sau repornire, în PowerShell:
+Pregătește modificările pe care vrei să le incluzi. `git add .` include toate schimbările neignorate; poți folosi în schimb `git add numele-fisierului` pentru fișiere alese.
 
 ```powershell
-Disable-ScheduledTask -TaskName "Hopper-GitHub-AutoPush"
-Enable-ScheduledTask -TaskName "Hopper-GitHub-AutoPush"
+git add .
 ```
 
-Sarcina Windows este locală și nu se instalează automat când cineva copiază proiectul de pe GitHub. Dacă muți proiectul sau schimbi contul GitHub, reconfigurează sarcina și destinația înainte de pornire. Publicarea în Google Play sau App Store rămâne separată.
+Opțional, verifică fișierele pregătite pentru chei private și exporturi de conturi, apoi consultă exact conținutul pregătit:
 
-Jurnalul zilnic este în [CHANGELOG.md](CHANGELOG.md). Înaintea fiecărui commit, automatizarea adaugă schimbările reale într-o secțiune cu data din România: fișiere adăugate, modificate și șterse și numărul de linii schimbate. Mai multe trimiteri în aceeași zi completează aceeași secțiune.
+```powershell
+npm.cmd run github:check
+git diff --cached
+```
 
-Nu creează zile fără schimbări și nu copiază cod, parole sau datele utilizatorilor în jurnal. Descrierile funcționalităților sunt completate când lucrăm la ele și rămân păstrate lângă lista automată. Jurnalul și codul sunt trimise în același commit.
+Comanda `github:check` doar citește fișierele pregătite. Nu adaugă fișiere, nu creează commituri și nu face push. Configurația privată, cheile de semnare, pozele de profil, pachetele compilate și instalarea Android Studio rămân excluse prin `.gitignore`. Verificarea este suplimentară și nu înlocuiește citirea modificărilor.
+
+Creează commitul cu un mesaj care descrie schimbarea și trimite-l:
+
+```powershell
+git commit -m "Descrie aici ce ai modificat"
+git push student main
+```
+
+De exemplu, mesajul poate fi `Corectez validarea sumei la cheltuieli`. Prima comandă salvează versiunea local; a doua o trimite pe GitHub. Dacă nu sunt schimbări, nu este necesar un commit nou. Testele și verificările proiectului pot fi rulate înainte de commit cu comenzile din secțiunea de dezvoltare.
+
+Jurnalul zilnic [CHANGELOG.md](CHANGELOG.md) rămâne în proiect. Descriem în română ce am adăugat, modificat sau corectat, sub data zilei din România, păstrând însemnările anterioare. Când modifici singură proiectul, completează și jurnalul înainte de commit. Include-l împreună cu schimbările pe care le trimiți.
+
+Publicarea în Google Play sau App Store rămâne separată de trimiterea codului pe GitHub.
