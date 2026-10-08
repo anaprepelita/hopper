@@ -1,3 +1,4 @@
+import { installAuthenticatedSession } from "./helpers/authenticated-app";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -23,6 +24,7 @@ function start(user: object = legacyUser, categoryPicker = false) {
   if (categoryPicker) mockDialog("expense-category-picker");
   localStorage.setItem("expenses_users", JSON.stringify([user]));
   localStorage.setItem("expenses_current_user", JSON.stringify(user));
+  installAuthenticatedSession();
   new Function("document", "localStorage", "alert", script)(document, localStorage, vi.fn());
 }
 
@@ -1636,33 +1638,27 @@ describe("Student budget", () => {
     expect(text("savings-status")).toContain("nu a putut fi salvată");
   });
 
-  it("shows distinct login errors without authenticating and clears them on correction", () => {
+  it("validates sign-in fields then delegates credentials without local password checks", () => {
     start();
     document.getElementById("logout-button")!.click();
     submit("login-form");
     expect(text("login-status")).toContain("Completează emailul și parola");
-    expect(document.getElementById("login-status")).not.toHaveAttribute("hidden");
     field("login-email", "invalid");
     field("login-password", "wrong");
     submit("login-form");
     expect(text("login-status")).toContain("email validă");
-    field("login-email", "missing@example.test");
+    field("login-email", "new@example.test");
+    field("login-password", " a password with spaces ");
     submit("login-form");
-    expect(text("login-status")).toBe("Nu există un cont cu acest email. Creează un cont.");
-    field("login-email", legacyUser.email);
-    submit("login-form");
-    expect(text("login-status")).toContain("Parola este incorectă");
-    expect(document.getElementById("login-password")).toHaveAttribute("aria-invalid", "true");
-    expect(document.activeElement).toBe(document.getElementById("login-password"));
+    const auth = (
+      window as unknown as { HopperAuth: ReturnType<typeof installAuthenticatedSession> }
+    ).HopperAuth;
+    expect(auth.signIn).toHaveBeenCalledWith({
+      email: "new@example.test",
+      password: " a password with spaces ",
+    });
     expect(localStorage.getItem("expenses_current_user")).toBeNull();
     expect(savedUser()).toEqual(legacyUser);
-    field("login-password", legacyUser.password);
-    document.getElementById("login-password")!.dispatchEvent(new Event("input", { bubbles: true }));
-    expect(document.getElementById("login-status")).toHaveAttribute("hidden");
-    expect(document.getElementById("login-password")).not.toHaveAttribute("aria-invalid");
-    submit("login-form");
-    expect(document.getElementById("app-screen")).not.toHaveClass("hidden");
-    expect(JSON.parse(localStorage.getItem("expenses_current_user")!).email).toBe(legacyUser.email);
   });
 
   it("starts with empty balances and rejects nonpositive expenses", () => {
@@ -2465,22 +2461,22 @@ describe("Student budget", () => {
     expect(document.getElementById("header-profile-photo")).toHaveClass("hidden");
   });
 
-  it("creates an account with pastel inline confirmation instead of a native alert", () => {
+  it("delegates registration without saving a plaintext password locally", () => {
     start();
     document.getElementById("logout-button")!.click();
-    document.querySelector<HTMLButtonElement>('[data-target="register-form"]')!.click();
     field("register-name", "Alex");
     field("register-email", "alex@example.test");
     field("register-password", "test-password");
     submit("register-form");
-    const feedback = document.getElementById("login-status")!;
-    expect(feedback.hidden).toBe(false);
-    expect(feedback.dataset["kind"]).toBe("success");
-    expect(feedback.getAttribute("role")).toBe("status");
-    expect(feedback.textContent).toContain("Contul tău a fost creat");
-    expect(document.getElementById("login-form")).toHaveClass("active");
-    expect(document.activeElement).toBe(document.getElementById("login-password"));
-    expect(JSON.parse(localStorage.getItem("expenses_users")!)).toHaveLength(2);
+    const auth = (
+      window as unknown as { HopperAuth: ReturnType<typeof installAuthenticatedSession> }
+    ).HopperAuth;
+    expect(auth.register).toHaveBeenCalledWith({
+      name: "Alex",
+      email: "alex@example.test",
+      password: "test-password",
+    });
+    expect(JSON.parse(localStorage.getItem("expenses_users")!)).toEqual([legacyUser]);
   });
 
   it("keeps the existing profile photo until the positioned crop is confirmed", async () => {

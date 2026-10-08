@@ -1,3 +1,4 @@
+import { installAuthenticatedSession } from "./helpers/authenticated-app";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -75,6 +76,7 @@ afterEach(async () => {
   delete bridge.HopperSync;
   mocks.listeners.clear();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("Packaged mobile app", () => {
@@ -136,6 +138,7 @@ describe("Packaged mobile app", () => {
     localStorage.setItem("expenses_current_user", JSON.stringify(legacy));
     const beforeUsers = localStorage.getItem("expenses_users");
     const beforeCurrent = localStorage.getItem("expenses_current_user");
+    installAuthenticatedSession();
     new Function("window", "document", "localStorage", "alert", script)(
       window,
       document,
@@ -154,7 +157,19 @@ describe("Packaged mobile app", () => {
     expect(localStorage.getItem("expenses_current_user")).toBe(beforeCurrent);
   });
 
+  it("cancels the MFA step before navigating a hidden dashboard tab", () => {
+    document.querySelector(".view-tab.active")!.classList.remove("active");
+    document.querySelector('.view-tab[data-view="settings"]')!.classList.add("active");
+    document.getElementById("mfa-form")!.classList.add("active");
+    const cancel = vi.fn();
+    document.getElementById("mfa-cancel")!.addEventListener("click", cancel);
+    expect(handleNativeBack(document)).toBe(true);
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(document.querySelector('.view-tab[data-view="settings"]')).toHaveClass("active");
+  });
+
   it("returns from registration before minimizing the app", () => {
+    installAuthenticatedSession();
     new Function("window", "document", "localStorage", "alert", script)(
       window,
       document,

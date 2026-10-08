@@ -49,6 +49,9 @@ describe("Native-only launch", () => {
     expect(load.mock.calls.map(([src]) => src)).toEqual([
       "translations.js",
       "i18n.js",
+      "sync-config.js",
+      "vendor/supabase.js",
+      "auth.js",
       "script.js",
     ]);
     expect(ui().hidden).toBe(true);
@@ -56,6 +59,18 @@ describe("Native-only launch", () => {
     expect(status().getAttribute("role")).toBe("alert");
     expect(document.getElementById("native-launch-retry")?.hidden).toBe(false);
   });
+
+  it.each(["sync-config.js", "vendor/supabase.js", "auth.js"])(
+    "blocks startup when required authentication resource %s fails",
+    async (missing) => {
+      const load = vi.fn(async (src: string) => {
+        if (src === missing) throw new Error("Missing auth resource");
+      });
+      expect(await bootNativeInterface(true, load)).toBe(false);
+      expect(ui().hidden).toBe(true);
+      expect(load).not.toHaveBeenCalledWith("script.js");
+    },
+  );
 
   it("opens the local app even when optional motion and synchronization resources fail", async () => {
     const load = vi.fn(async (src: string) => {

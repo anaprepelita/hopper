@@ -1369,3 +1369,171 @@ Object.assign(window.HopperMessages, {
   "Un clinchet jucăuș când deblochezi o reușită.": ["A playful chime when you unlock an achievement.", "Un petit son joyeux lorsque tu débloques une réussite.", "Весёлый звон при получении достижения."],
   "Ascultă sunetul": ["Preview sound", "Écouter le son", "Послушать звук"]
 });
+
+Object.assign(window.HopperMessages, {
+  "Conectarea securizată nu este disponibilă momentan.": [
+    "Secure sign-in is currently unavailable.",
+    "La connexion sécurisée est momentanément indisponible.",
+    "Защищённый вход временно недоступен."
+  ],
+  "Protejează-ți contul": [
+    "Protect your account",
+    "Protège ton compte",
+    "Защитите свой аккаунт"
+  ],
+  "Confirmă conectarea": [
+    "Confirm sign-in",
+    "Confirme la connexion",
+    "Подтвердите вход"
+  ],
+  "Introdu codul din Google sau Microsoft Authenticator.": [
+    "Enter the code from Google or Microsoft Authenticator.",
+    "Saisis le code de Google ou Microsoft Authenticator.",
+    "Введите код из Google или Microsoft Authenticator."
+  ],
+  "Adaugă Hopper în Authenticator, apoi introdu primul cod.": [
+    "Add Hopper to Authenticator, then enter the first code.",
+    "Ajoute Hopper dans Authenticator, puis saisis le premier code.",
+    "Добавьте Hopper в Authenticator и введите первый код."
+  ],
+  "Cod QR pentru Authenticator": [
+    "Authenticator QR code",
+    "Code QR pour Authenticator",
+    "QR-код для Authenticator"
+  ],
+  "Configurează pe același telefon": [
+    "Set up on this phone",
+    "Configurer sur ce téléphone",
+    "Настроить на этом телефоне"
+  ],
+  "Copiază cheia și adaug-o manual în Authenticator.": [
+    "Copy the key and add it manually to Authenticator.",
+    "Copie la clé et ajoute-la manuellement dans Authenticator.",
+    "Скопируйте ключ и добавьте его вручную в Authenticator."
+  ],
+  "Cheie de configurare": [
+    "Setup key",
+    "Clé de configuration",
+    "Ключ настройки"
+  ],
+  "Copiază cheia": [
+    "Copy key",
+    "Copier la clé",
+    "Копировать ключ"
+  ],
+  "Cod de autentificare": [
+    "Authentication code",
+    "Code d’authentification",
+    "Код подтверждения"
+  ],
+  "Verifică și continuă": [
+    "Verify and continue",
+    "Vérifier et continuer",
+    "Подтвердить и продолжить"
+  ],
+  "Ai pierdut accesul la Authenticator? Recuperarea contului necesită verificarea identității prin suport.": [
+    "Lost access to Authenticator? Account recovery requires identity verification through support.",
+    "Tu n’as plus accès à Authenticator ? La récupération nécessite une vérification de ton identité par le support.",
+    "Нет доступа к Authenticator? Для восстановления нужна проверка личности службой поддержки."
+  ],
+  "Ai un cont local mai vechi? Înregistrează același email și confirmă-l pentru a păstra datele de pe acest dispozitiv.": [
+    "Have an older local account? Register and confirm the same email to keep this device’s data.",
+    "Tu as un ancien compte local ? Inscris-toi avec le même email et confirme-le pour conserver les données de cet appareil.",
+    "Уже есть локальный аккаунт? Зарегистрируйте и подтвердите тот же email, чтобы сохранить данные на этом устройстве."
+  ],
+  "Acest cont online nu corespunde contului salvat pe dispozitiv.": [
+    "This online account does not match the account saved on this device.",
+    "Ce compte en ligne ne correspond pas au compte enregistré sur cet appareil.",
+    "Этот онлайн-аккаунт не соответствует сохранённому на устройстве."
+  ],
+  "Datele nu au putut fi salvate. Încearcă din nou.": [
+    "Your data could not be saved. Try again.",
+    "Les données n’ont pas pu être enregistrées. Réessaie.",
+    "Не удалось сохранить данные. Попробуйте снова."
+  ],
+  "Emailul sau parola este incorectă. Încearcă din nou.": [
+    "The email or password is incorrect. Try again.",
+    "L’email ou le mot de passe est incorrect. Réessaie.",
+    "Неверный email или пароль. Попробуйте снова."
+  ],
+  "Există deja un cont cu acest email. Conectează-te.": [
+    "An account with this email already exists. Sign in.",
+    "Un compte existe déjà avec cet email. Connecte-toi.",
+    "Аккаунт с таким email уже существует. Войдите."
+  ],
+  "Alege o parolă de cel puțin 8 caractere.": [
+    "Choose a password with at least 8 characters.",
+    "Choisis un mot de passe d’au moins 8 caractères.",
+    "Выберите пароль длиной не менее 8 символов."
+  ],
+  "Prea multe încercări. Așteaptă puțin și încearcă din nou.": [
+    "Too many attempts. Wait a little and try again.",
+    "Trop de tentatives. Attends un peu et réessaie.",
+    "Слишком много попыток. Подождите и повторите."
+  ],
+  "Codul este incorect sau a expirat. Introdu codul nou din Authenticator.": [
+    "The code is incorrect or expired. Enter the new code from Authenticator.",
+    "Le code est incorrect ou expiré. Saisis le nouveau code d’Authenticator.",
+    "Код неверен или истёк. Введите новый код из Authenticator."
+  ],
+  "Conectarea nu a putut fi verificată. Verifică internetul și încearcă din nou.": [
+    "Sign-in could not be verified. Check your connection and try again.",
+    "La connexion n’a pas pu être vérifiée. Vérifie internet et réessaie.",
+    "Не удалось проверить вход. Проверьте интернет и попробуйте снова."
+  ],
+  "Introdu codul de 6 cifre din Authenticator.": [
+    "Enter the 6-digit Authenticator code.",
+    "Saisis le code à 6 chiffres d’Authenticator.",
+    "Введите шестизначный код из Authenticator."
+  ],
+  "Cheia a fost copiată. Adaug-o în Authenticator.": [
+    "The key was copied. Add it to Authenticator.",
+    "La clé a été copiée. Ajoute-la dans Authenticator.",
+    "Ключ скопирован. Добавьте его в Authenticator."
+  ],
+  "Selectează cheia și copiaz-o în Authenticator.": [
+    "Select the key and copy it to Authenticator.",
+    "Sélectionne la clé et copie-la dans Authenticator.",
+    "Выделите ключ и скопируйте его в Authenticator."
+  ]
+});
+
+Object.assign(window.HopperMessages, {
+  "Confirmă emailul": [
+    "Confirm your email",
+    "Confirme ton email",
+    "Подтвердите email"
+  ],
+  "Introdu codul de confirmare primit pe email.": [
+    "Enter the confirmation code sent to your email.",
+    "Saisis le code de confirmation reçu par email.",
+    "Введите код подтверждения из письма."
+  ],
+  "Codul primit pe email": [
+    "Email confirmation code",
+    "Code reçu par email",
+    "Код из письма"
+  ],
+  "Retrimite codul": [
+    "Resend code",
+    "Renvoyer le code",
+    "Отправить код повторно"
+  ],
+  "Codul de confirmare a fost retrimis. Verifică și dosarul Spam.": [
+    "The confirmation code was resent. Check Spam too.",
+    "Le code de confirmation a été renvoyé. Vérifie aussi les indésirables.",
+    "Код отправлен повторно. Проверьте также папку «Спам»."
+  ],
+  "Codul de email este incorect sau a expirat. Verifică ultimul email sau retrimite codul.": [
+    "The email code is incorrect or expired. Check the latest email or resend the code.",
+    "Le code email est incorrect ou expiré. Consulte le dernier email ou renvoie le code.",
+    "Код из письма неверен или истёк. Проверьте последнее письмо или запросите новый код."
+  ],
+  "Introdu codul de 6 cifre primit pe email.": [
+    "Enter the 6-digit code from your email.",
+    "Saisis le code à 6 chiffres reçu par email.",
+    "Введите шестизначный код из письма."
+  ]
+});
+
+Object.assign(window.HopperMessages, {"Sesiunea trebuie verificată din nou. Conectează-te.":["Your session must be verified again. Sign in.","Ta session doit être vérifiée à nouveau. Connecte-toi.","Сеанс нужно подтвердить заново. Войдите."]});

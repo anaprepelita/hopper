@@ -24,7 +24,7 @@
     root.querySelectorAll("[data-i18n]").forEach((el) => {
       el.textContent = t(el.dataset.i18n);
     });
-    for (const attr of ["placeholder", "aria-label", "title"]) {
+    for (const attr of ["placeholder", "aria-label", "title", "alt"]) {
       root
         .querySelectorAll(`[data-i18n-${attr}]`)
         .forEach((el) => el.setAttribute(attr, t(el.getAttribute(`data-i18n-${attr}`))));

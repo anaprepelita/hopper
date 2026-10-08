@@ -1,3 +1,4 @@
+import { installAuthenticatedSession } from "./helpers/authenticated-app";
 /* eslint-disable @typescript-eslint/no-explicit-any -- Exercise untyped legacy JSON and the standalone JS bridge, including invalid payloads. */
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -58,6 +59,7 @@ function boot(localUser: any = user, configured = false, sdk?: any) {
   });
   localStorage.setItem("expenses_users", JSON.stringify([localUser]));
   localStorage.setItem("expenses_current_user", JSON.stringify(localUser));
+  installAuthenticatedSession(() => sdk?.createClient());
   for (const name of ["translations", "i18n", "script"])
     new Function("window", "document", "localStorage", "alert", sources[name]!)(
       window,
@@ -117,11 +119,15 @@ function fakeCloud(initial: any = null) {
     },
   };
 }
-async function link(importLocal = true) {
-  set("cloud-email", user.email);
-  set("cloud-password", "cloud-password");
-  (document.getElementById("cloud-import") as HTMLInputElement).checked = importLocal;
-  await api().connect(false);
+async function link() {
+  const current = stored();
+  current.cloudAccountId = cloudSession.user.id;
+  current.cloudProject = "https://project.supabase.co";
+  api().identifyRecords(current, true);
+  win["HopperApp"].applyCloud(current);
+  const auth = win["HopperAuth"].getClient().auth;
+  await auth.signInWithPassword({ email: user.email, password: "test-only" });
+  await api().synchronize();
 }
 
 beforeEach(() => {
@@ -143,6 +149,7 @@ afterEach(() => {
   ])
     delete win[key];
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   vi.useRealTimers();
   document.body.replaceChildren();
 });
@@ -301,7 +308,7 @@ describe("Local and online synchronization", () => {
   it("works locally when configuration or library is missing and never uploads credentials or photos", async () => {
     boot();
     const before = localStorage.getItem("expenses_users");
-    await link();
+    await api().connect(false);
     expect(document.getElementById("cloud-status")?.textContent).toContain("configurarea");
     expect(localStorage.getItem("expenses_users")).toBe(before);
     const value = api().snapshot(user);
@@ -405,17 +412,21 @@ describe("Local and online synchronization", () => {
     expect(() => api().validateSnapshot({ hiddenCategories: { unexpected: true } })).toThrow();
     expect(() => api().validateSnapshot({ expenses: [{ id: "x", amount: "bad" }] })).toThrow();
   });
-  it("requires explicit local import and email confirmation before sending data", async () => {
+  it("delegates the old hidden login to mandatory MFA without linking or uploading financial data", async () => {
     const cloud = fakeCloud();
     boot(user, true, cloud.sdk);
-    await link(false);
+    set("cloud-email", user.email);
+    set("cloud-password", "test-only");
+    await api().connect(false);
+    expect(win["HopperAuth"].signIn).toHaveBeenCalledWith({
+      email: user.email,
+      password: "test-only",
+    });
     expect(cloud.rpc).not.toHaveBeenCalled();
     expect(stored().cloudAccountId).toBeUndefined();
-    expect(document.getElementById("cloud-status")?.textContent).toContain("Bifează");
-    await api().connect(true);
-    expect(cloud.rpc).not.toHaveBeenCalled();
-    expect(document.getElementById("cloud-status")?.textContent).toContain("Confirmă");
+    expect((document.getElementById("cloud-password") as HTMLInputElement).value).toBe("");
   });
+
   it("uploads after linking, downloads remote changes, and queues offline changes", async () => {
     const cloud = fakeCloud();
     boot(user, true, cloud.sdk);

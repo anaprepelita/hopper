@@ -6,7 +6,7 @@ Pe telefoanele cu ecrane de până la 720 px, aplicația are o bară de navigare
 
 ## Conturi și păstrarea datelor
 
-Conturile și sesiunea de autentificare folosesc în continuare cheile `expenses_users` și `expenses_current_user` din localStorage. Înainte de încărcarea scripturilor financiare este pregătită o copie locală nativă prin `@capacitor/preferences`, cu cheia `hopper_accounts_v1`. Copia se actualizează după modificarea conturilor, poate restaura înregistrările lipsă din WebView la următoarea pornire și păstrează modificările locale mai recente și deconectarea cerută de utilizator. Parolele și pozele rămân pe dispozitiv.
+Înregistrările locale ale conturilor și ultima sesiune deschisă folosesc în continuare cheile `expenses_users` și `expenses_current_user` din localStorage. Înainte de încărcarea scripturilor financiare este pregătită o copie locală nativă prin `@capacitor/preferences`, cu cheia `hopper_accounts_v1`. Copia se actualizează după modificarea conturilor, poate restaura înregistrările lipsă din WebView la următoarea pornire și păstrează modificările locale mai recente și deconectarea cerută de utilizator. Pozele rămân pe dispozitiv. Parolele conturilor noi sunt verificate de Supabase și nu sunt salvate în aceste înregistrări; câmpurile vechi sunt păstrate pentru compatibilitate. O copie locală a utilizatorului nu permite conectarea fără verificare 2FA.
 
 Dacă citirea datelor eșuează, aplicația oferă reîncercarea, în loc să afișeze o listă aparent goală de conturi. Dacă actualizarea copiei native eșuează, datele locale sunt păstrate și se poate reîncerca. Dezinstalarea sau ștergerea tuturor datelor aplicației elimină ambele copii. Acest mecanism păstrează datele pe dispozitiv; sincronizarea între dispozitive necesită configurarea separată a serviciului Supabase.
 
@@ -30,11 +30,17 @@ Fiecare cont poate salva un nume afișat, universitatea, anul de studiu și valu
 
 Anul de studiu, valuta și sursa venitului folosesc dialoguri retro cu același aspect, navigare din tastatură și revenirea focalizării la selector după închidere. Alegerea valutei actualizează câmpul; **Salvează valuta** aplică și memorează preferința.
 
-## Autentificare și validarea formularelor
+## Autentificare cu doi factori și validarea formularelor
 
 Autentificarea se deschide direct pe formularul de conectare, fără butoanele duplicate de conectare și înregistrare de deasupra. Butoanele retro pastel de sub formulare permit trecerea între înregistrare și conectare și focalizează primul câmp.
 
-Erorile apar în formular, cu mesaje separate pentru câmpuri lipsă, email invalid, parolă greșită sau un cont care nu există în stocarea locală. Conturile locale rămân disponibile, iar controalele de sincronizare sunt ascunse.
+Toate conturile folosesc email și parolă prin Supabase, apoi un cod din Google/Microsoft Authenticator. La înregistrare, emailul este confirmat printr-un cod introdus direct în Hopper. La prima conectare, utilizatorul configurează Authenticator prin QR sau prin copierea cheii pe același telefon. Codurile incorecte, expirate și lipsa internetului afișează mesaje în formular; anularea nu deschide contul.
+
+Dashboardul se deschide numai după validarea sesiunii pe server, a nivelului `aal2` și a unui factor TOTP verificat. Sesiunile salvate sunt reverificate la pornire. Fără configurația Supabase sau resursele de autentificare, aplicația păstrează datele și rămâne blocată la conectare.
+
+**Integrarea necesită încă proiectul Supabase și configurarea emailului înainte de folosirea pe telefon.** Pașii sunt în [ghidul 2FA](supabase/AUTH.md). Conturile locale vechi se asociază după confirmarea aceleiași adrese de email și verificarea Authenticator, păstrând înregistrările și poza. Autentificarea nu activează sincronizarea financiară.
+
+Mesajele pentru câmpuri lipsă și email invalid rămân distincte. Pentru credențiale respinse de server, mesajul este „Emailul sau parola este incorectă”, fără identificarea conturilor din lista locală.
 
 Celelalte formulare afișează avertizări în limba aleasă lângă câmpurile obligatorii necompletate. Pentru suma unui venit sau a unei cheltuieli, mesajul în română este **Completează suma.** Salvarea focalizează primul câmp invalid și păstrează valorile introduse, fără să salveze înregistrări incomplete. Avertizările dispar după corectare; câmpurile opționale rămân opționale. Sunt verificate și formatul emailului, sumele pozitive și precizia de maximum două zecimale.
 
@@ -154,9 +160,9 @@ npm run build
 
 `npm run build` generează și verifică doar `mobile-dist/`, pornind de la `mobile/app/`. Vite construiește codul intern Capacitor; nu publică un site. Vechea structură React/TanStack și dependențele folosite exclusiv pentru web au fost eliminate. Nu există comenzi `dev`, `preview` sau de publicare a unui site. Punctul principal de intrare și `/app/index.html` din pachetul nativ păstrează căile de resurse `/app/`. Nu este inclus un manifest PWA.
 
-`mobile/bootstrap.ts` verifică platforma nativă Capacitor înainte de încărcarea interfeței financiare. În browser apare doar instrucțiunea de a deschide aplicația instalată; scripturile conturilor și finanțelor nu rulează acolo. Scripturile obligatorii se încarcă pe rând înainte de afișarea interfeței. Lipsa resurselor opționale de sincronizare sau animație nu blochează utilizarea locală. Lipsa unei resurse esențiale afișează un ecran de reîncercare. Restricția stabilește modul de acces la produs, dar nu protejează resursele locale extrase din pachet.
+`mobile/bootstrap.ts` verifică platforma nativă Capacitor înainte de încărcarea interfeței financiare. În browser apare doar instrucțiunea de a deschide aplicația instalată; scripturile conturilor și finanțelor nu rulează acolo. Scripturile obligatorii se încarcă pe rând înainte de afișarea interfeței. Lipsa resurselor opționale de sincronizare sau animație nu blochează utilizarea locală într-o sesiune autentificată. Lipsa unei resurse esențiale afișează un ecran de reîncercare. Restricția stabilește modul de acces la produs, dar nu protejează resursele locale extrase din pachet.
 
-Pachetul nativ include JavaScript, stiluri, fontul suplimentar pentru română, Anime.js, SDK-ul Supabase, cele patru cataloage de traduceri și imaginile PNG originale ale animalelor. Nunito și Press Start 2P sunt copiate din pachete Fontsource cu versiuni fixate și licențe OFL. Conturile și operațiunile financiare locale funcționează fără internet, fără un site extern sau fonturi de pe CDN. Sincronizarea necesită internet și un proiect Supabase configurat.
+Pachetul nativ include JavaScript, stiluri, fontul suplimentar pentru română, Anime.js, SDK-ul Supabase, cele patru cataloage de traduceri și imaginile PNG originale ale animalelor. Nunito și Press Start 2P sunt copiate din pachete Fontsource cu versiuni fixate și licențe OFL. Resursele sunt incluse local, fără un site extern sau fonturi de pe CDN. Conectarea și validarea sesiunii la pornire necesită internet și un proiect Supabase configurat. După autentificare, operațiunile financiare locale pot fi folosite fără internet; sincronizarea necesită conexiune.
 
 `mobile/runtime.ts` gestionează butonul Înapoi pe Android: închide dialogul prin evenimentul său de anulare, revine la buget, trece de la înregistrare la conectare, apoi minimizează aplicația din ecranul principal. Nu modifică înregistrările contului. Revenirea în prim-plan reia sincronizarea cu verificările existente. Barele sistemului urmează tema.
 
@@ -261,7 +267,7 @@ Proiectul folosește Swift Package Manager și este destinat iOS **15.4+**. Sele
 
 Repository-ul conține proiectele de dezvoltare, nu o versiune publicată în magazine. Mediul Windows a fost configurat pentru compilări Android de test, iar APK-ul de depanare a fost compilat și instalat pe telefon în verificările anterioare. Compilarea iOS necesită un Mac. Contul Google Play există; pentru App Store este necesar și un cont Apple Developer.
 
-Testarea pe dispozitive trebuie să acopere tastatura și dialogurile, zonele protejate ale ecranului, selectarea pozelor, redeschiderea fără internet, copiile locale și sincronizarea. Pregătirea resurselor și testele JavaScript nu înlocuiesc aceste verificări native.
+Testarea pe dispozitive trebuie să acopere tastatura și dialogurile, zonele protejate ale ecranului, selectarea pozelor, redeschiderea cu verificarea online a sesiunii, păstrarea datelor când internetul lipsește, copiile locale și sincronizarea. Pregătirea resurselor și testele JavaScript nu înlocuiesc aceste verificări native.
 
 Cerințe oficiale: [pregătirea mediului Capacitor](https://capacitorjs.com/docs/getting-started/environment-setup), [publicarea în Google Play](https://capacitorjs.com/docs/android/deploying-to-google-play), [publicarea în App Store](https://capacitorjs.com/docs/ios/deploying-to-app-store).
 
@@ -287,13 +293,13 @@ Valorile interne ale opțiunilor pentru sursa veniturilor rămân aceleași, chi
 
 ## Sincronizare opțională prin Supabase
 
-Controalele de sincronizare sunt ascunse la cererea utilizatorului. Integrarea și migrarea opționale existente sunt păstrate pentru compatibilitatea conturilor și datelor, dar conectarea unor conturi online noi nu este expusă în interfață.
+Controalele de sincronizare sunt ascunse la cererea utilizatorului. Integrarea și migrarea opționale existente sunt păstrate pentru compatibilitatea conturilor și datelor, iar autentificarea online cu 2FA este obligatorie. Aceasta nu activează încărcarea datelor financiare.
 
-Înregistrările locale, parolele, pozele și cheile de stocare sunt păstrate. Raportarea problemelor folosește o funcție Supabase separată și nu necesită sincronizarea financiară.
+Înregistrările locale existente, pozele și cheile de stocare sunt păstrate. Raportarea problemelor folosește o funcție Supabase separată și nu necesită sincronizarea financiară.
 
 ## Structura surselor și verificări
 
-- `mobile/app/`: interfața financiară, stocarea locală, traducerile, animațiile, sincronizarea și imaginile originale ale animalelor.
+- `mobile/app/`: autentificarea cu 2FA, interfața financiară, stocarea locală, traducerile, animațiile, sincronizarea și imaginile originale ale animalelor.
 - `mobile/assets/animals/`: informații despre imaginile PNG locale păstrate.
 - `mobile/`: pornirea nativă, structura interfeței împachetate, comportamentul aplicației și stilurile pentru zonele protejate ale ecranului.
 - `android/` și `ios/`: proiectele native.

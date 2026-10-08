@@ -37,7 +37,7 @@ supabase secrets set --env-file supabase/.env
 supabase functions deploy report-problem
 ```
 
-Supabase furnizează pe server `SUPABASE_URL` și `SUPABASE_SERVICE_ROLE_KEY`; cheia service role nu ajunge în aplicație. Funcția este publică deoarece conturile locale Hopper nu au sesiuni Supabase. Configurația `verify_jwt = false` este în `supabase/config.toml`; accesul la date rămâne exclusiv pe server.
+Supabase furnizează pe server `SUPABASE_URL` și `SUPABASE_SERVICE_ROLE_KEY`; cheia service role nu ajunge în aplicație. Endpointul de raportare este public și separat de autentificarea financiară; serverul aplică validarea fișierelor și limitele de trimitere. Configurația `verify_jwt = false` este în `supabase/config.toml`; accesul la date rămâne exclusiv pe server.
 
 ## 4. Conectează aplicația
 
@@ -75,3 +75,5 @@ Atașamentele sunt maximum trei, maximum 20 MB în total: poze JPG/PNG/WebP de m
 - Testele locale folosesc servicii simulate. Migrarea și livrarea reală trebuie verificate în proiectul configurat; nu au fost publicate sau executate automat.
 
 Documentație: [Supabase și email](https://supabase.com/docs/guides/functions/examples/send-emails), [Storage privat](https://supabase.com/docs/guides/storage/security/access-control), [Resend: trimitere](https://resend.com/docs/api-reference/emails/send-email), [Idempotency](https://resend.com/docs/dashboard/emails/idempotency-keys).
+
+Autentificarea obligatorie cu doi factori are un [ghid separat de configurare](AUTH.md).

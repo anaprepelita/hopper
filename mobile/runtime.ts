@@ -14,8 +14,15 @@ export function handleNativeBack(document: Document): boolean {
     return true;
   }
   const tab = document.querySelector<HTMLButtonElement>(".view-tab.active");
-  if (tab && tab.dataset["view"] !== "home") {
+  if (tab && tab.dataset["view"] !== "home" && !document.querySelector("#app-screen.hidden")) {
     document.querySelector<HTMLButtonElement>('.view-tab[data-view="home"]')?.click();
+    return true;
+  }
+  if (
+    document.querySelector("#mfa-form.active") &&
+    !document.querySelector("#auth-screen.hidden")
+  ) {
+    document.getElementById("mfa-cancel")?.click();
     return true;
   }
   const registration = document.querySelector("#register-form.active");

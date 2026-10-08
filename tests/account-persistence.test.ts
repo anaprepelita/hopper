@@ -1,3 +1,4 @@
+import { installAuthenticatedSession } from "./helpers/authenticated-app";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import {
   ACCOUNT_BACKUP_KEY,
@@ -38,6 +39,7 @@ beforeEach(() => {
 afterEach(() => {
   delete window.HopperPersistence;
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("Native account persistence", () => {
@@ -219,6 +221,7 @@ describe("Financial interface persistence hooks", () => {
       readFileSync("mobile/app/index.html", "utf8"),
       "text/html",
     ).body.innerHTML;
+    installAuthenticatedSession();
     new Function("document", "localStorage", "alert", readFileSync("mobile/app/script.js", "utf8"))(
       document,
       localStorage,
@@ -239,18 +242,8 @@ describe("Financial interface persistence hooks", () => {
     expect(JSON.parse(native.value()!).current).toBeNull();
     expect(JSON.parse(JSON.parse(native.value()!).users)[0].incomes).toHaveLength(1);
   });
-  it("does not confirm registration before its native copy completes", async () => {
-    await open();
-    document.getElementById("logout-button")!.click();
-    await window.HopperPersistence!.flush();
-    document.querySelector<HTMLButtonElement>('[data-target="register-form"]')!.click();
-    for (const [id, value] of [
-      ["register-name", "Alex"],
-      ["register-email", "alex@example.test"],
-      ["register-password", "test-only"],
-    ]) {
-      (document.getElementById(id!) as HTMLInputElement).value = value!;
-    }
+  it("waits for the native copy before completing the authenticated account write", async () => {
+    const native = await open();
     let release!: () => void;
     const original = window.HopperPersistence!.flush;
     window.HopperPersistence!.flush = vi.fn(async () => {
@@ -259,40 +252,37 @@ describe("Financial interface persistence hooks", () => {
       });
       await original();
     });
-    document
-      .getElementById("register-form")!
-      .dispatchEvent(new Event("submit", { cancelable: true }));
-    expect(document.getElementById("login-status")!.hidden).toBe(true);
-    expect(document.getElementById("register-form")!.classList.contains("active")).toBe(true);
+    const bridge = (
+      window as unknown as { HopperApp: { acceptAuthenticated: (user: object) => Promise<void> } }
+    ).HopperApp;
+    const current = JSON.parse(localStorage.getItem(C)!);
+    let complete = false;
+    const pending = bridge
+      .acceptAuthenticated({ ...current, authAccountId: "verified" })
+      .then(() => {
+        complete = true;
+      });
+    expect(complete).toBe(false);
     release();
-    await vi.waitFor(() => expect(document.getElementById("login-status")!.hidden).toBe(false));
-    expect((document.getElementById("login-status") as HTMLElement).dataset["kind"]).toBe(
-      "success",
-    );
+    await pending;
+    expect(JSON.parse(JSON.parse(native.value()!).users)[0].authAccountId).toBe("verified");
   });
-  it("preserves registration input and avoids success confirmation on native write failure", async () => {
+
+  it("rolls back both local account copies when the native write fails", async () => {
     await open();
-    document.getElementById("logout-button")!.click();
-    await window.HopperPersistence!.flush();
-    document.querySelector<HTMLButtonElement>('[data-target="register-form"]')!.click();
-    for (const [id, value] of [
-      ["register-name", "Alex"],
-      ["register-email", "alex@example.test"],
-      ["register-password", "test-only"],
-    ]) {
-      (document.getElementById(id!) as HTMLInputElement).value = value!;
-    }
+    const beforeUsers = localStorage.getItem(U);
+    const beforeCurrent = localStorage.getItem(C);
     window.HopperPersistence!.flush = vi.fn(async () => {
       throw new Error("Write failed");
     });
-    document
-      .getElementById("register-form")!
-      .dispatchEvent(new Event("submit", { cancelable: true }));
-    await vi.waitFor(() => expect(document.getElementById("register-status")!.hidden).toBe(false));
-    expect(document.getElementById("login-status")!.hidden).toBe(true);
-    expect((document.getElementById("register-email") as HTMLInputElement).value).toBe(
-      "alex@example.test",
-    );
-    expect(JSON.parse(localStorage.getItem(U)!)).toHaveLength(2);
+    const bridge = (
+      window as unknown as { HopperApp: { acceptAuthenticated: (user: object) => Promise<void> } }
+    ).HopperApp;
+    const current = JSON.parse(beforeCurrent!);
+    await expect(
+      bridge.acceptAuthenticated({ ...current, authAccountId: "verified" }),
+    ).rejects.toThrow();
+    expect(localStorage.getItem(U)).toBe(beforeUsers);
+    expect(localStorage.getItem(C)).toBe(beforeCurrent);
   });
 });

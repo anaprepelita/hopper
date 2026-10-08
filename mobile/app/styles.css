@@ -1120,3 +1120,16 @@ select:focus {
 #expense-category-button[aria-invalid="true"] { border-color: var(--theme-error, #a93d61) !important; }
 #expense-category-value { min-width: 0; overflow-wrap: anywhere; }
 
+
+.mfa-badge { width: 44px; height: 44px; display: grid; place-items: center; margin: 0 auto 12px; border: 2px solid var(--w-mauve); border-radius: 14px; background: var(--w-lilac); color: var(--w-ink); font-size: 24px; box-shadow: 3px 3px 0 var(--w-blush); }
+#mfa-form { min-width: 0; }
+.mfa-qr { display: block; width: min(192px, 100%); height: auto; margin: 16px auto; padding: 8px; border: 2px solid var(--w-mauve); border-radius: 12px; background: white; }
+#mfa-manual { margin: 12px 0 18px; padding: 12px; border: 2px dashed var(--w-mauve); border-radius: 12px; background: var(--w-cream); }
+#mfa-manual summary { cursor: pointer; min-height: 44px; align-content: center; font-weight: 800; }
+#mfa-secret { width: 100%; min-width: 0; font-family: Nunito, sans-serif; }
+#mfa-copy { margin-top: 10px; }
+#mfa-code { text-align: center; letter-spacing: .3em; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+#mfa-form .mfa-recovery-note { margin-top: 16px; font-size: .8rem; }
+#mfa-setup[hidden] { display: none; }
+
+#mfa-resend[hidden] { display: none; }

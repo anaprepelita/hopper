@@ -49,6 +49,7 @@
 
         <form id="register-form" class="auth-form">
           <h2><span data-i18n="Începe bugetul tău">Începe bugetul tău</span></h2>
+<p class="student-note auth-migration-note" data-i18n="Ai un cont local mai vechi? Înregistrează același email și confirmă-l pentru a păstra datele de pe acest dispozitiv.">Ai un cont local mai vechi? Înregistrează același email și confirmă-l pentru a păstra datele de pe acest dispozitiv.</p>
 
           <div class="field-group">
             <label for="register-name"><span data-i18n="Nume">Nume</span></label>
@@ -62,12 +63,36 @@
 
           <div class="field-group">
             <label for="register-password"><span data-i18n="Parolă">Parolă</span></label>
-            <input id="register-password" type="password" placeholder="Alege o parolă" required  data-i18n-placeholder="Alege o parolă"/>
+            <input id="register-password" type="password" minlength="8" autocomplete="new-password" placeholder="Alege o parolă" required  data-i18n-placeholder="Alege o parolă"/>
           </div>
 
           <p id="register-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
           <button type="submit" class="primary-button"><span data-i18n="Creează cont">Creează cont</span></button>
           <button type="button" class="auth-form-switch" data-target="login-form" aria-controls="login-form" data-i18n="Înapoi la conectare">Înapoi la conectare</button>
+        </form>
+        <form id="mfa-form" class="auth-form" novalidate>
+          <div class="mfa-badge" aria-hidden="true">✦</div>
+          <h2 id="mfa-heading" data-i18n="Confirmă conectarea">Confirmă conectarea</h2>
+          <p id="mfa-intro" class="student-note" data-i18n="Introdu codul din Google sau Microsoft Authenticator.">Introdu codul din Google sau Microsoft Authenticator.</p>
+          <div id="mfa-setup" hidden>
+            <img id="mfa-qr" class="mfa-qr" width="192" height="192" alt="Cod QR pentru Authenticator" data-i18n-alt="Cod QR pentru Authenticator" />
+            <details id="mfa-manual">
+              <summary data-i18n="Configurează pe același telefon">Configurează pe același telefon</summary>
+              <p class="student-note" data-i18n="Copiază cheia și adaug-o manual în Authenticator.">Copiază cheia și adaug-o manual în Authenticator.</p>
+              <label for="mfa-secret" data-i18n="Cheie de configurare">Cheie de configurare</label>
+              <input id="mfa-secret" type="text" readonly autocomplete="off" spellcheck="false" />
+              <button id="mfa-copy" class="secondary-button" type="button" data-i18n="Copiază cheia">Copiază cheia</button>
+            </details>
+          </div>
+          <div class="field-group">
+            <label id="mfa-code-label" for="mfa-code" data-i18n="Cod de autentificare">Cod de autentificare</label>
+            <input id="mfa-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-describedby="mfa-status" placeholder="000000" />
+          </div>
+          <p id="mfa-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
+          <button type="submit" class="primary-button" data-i18n="Verifică și continuă">Verifică și continuă</button>
+          <button id="mfa-resend" type="button" class="secondary-button" hidden data-i18n="Retrimite codul">Retrimite codul</button>
+          <button id="mfa-cancel" type="button" class="secondary-button" data-i18n="Înapoi la conectare">Înapoi la conectare</button>
+          <p class="student-note mfa-recovery-note" data-i18n="Ai pierdut accesul la Authenticator? Recuperarea contului necesită verificarea identității prin suport.">Ai pierdut accesul la Authenticator? Recuperarea contului necesită verificarea identității prin suport.</p>
         </form>
       </div>
     </div>

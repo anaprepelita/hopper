@@ -11,7 +11,7 @@ Hopper is an Android/iOS student budget app using Capacitor. Its HTML/CSS/JavaSc
 - Do not rewrite published git history or force push, rebase or squash published branches.
 - Preserve the original local animal images in [mobile/app/animals/](mobile/app/animals/) and metadata in [mobile/assets/animals/](mobile/assets/animals/).
 - Profile photos stay locally on each device for each account. Do not upload them or commit them.
-- Use the WebView's localStorage as the financial persistence layer, mirrored on-device through `mobile/persistence.ts` and Capacitor Preferences. Restore the existing account keys before loading the financial scripts; preserve explicit logout and never overwrite valid copies with malformed data. Optional Supabase sync lives in `mobile/app/sync.js`; local accounts work without a backend. Upload only the explicit financial/profile allowlist, never local passwords or photos. Preserve local copies and detect competing remote changes.
+- Use the WebView's localStorage as the financial persistence layer, mirrored on-device through `mobile/persistence.ts` and Capacitor Preferences. Restore the existing account keys before loading the financial scripts; preserve explicit logout and never overwrite valid copies with malformed data. Optional Supabase sync lives in `mobile/app/sync.js`; financial data stays local by default, while authentication requires Supabase and TOTP. Upload only the explicit financial/profile allowlist, never local passwords or photos. Preserve local copies and detect competing remote changes.
 - Preserve `expenses_users` and `expenses_current_user`, saved records and unrelated account fields. Remain compatible with older accounts.
 - Treat amounts without currency as RON. A preferred currency change selects the entry/view currency; it must not convert or relabel existing amounts.
 - Romanian is the default. Use the local catalogs for English, French and Russian; never translate stored names, descriptions or custom category labels in place.
@@ -56,5 +56,10 @@ The build includes local resource checks. Native SDK/device verification is addi
 
 ## Manual Git workflow
 
-- Commit and push are manual and controlled by the user. Leave changes unstaged for the user to review. Do not stage files, create commits, push, or restore scheduled GitHub tasks unless the user explicitly requests that action.
+- Commit and push are manual and controlled by the user. Leave changes unstaged for the user to review. Do not stage files, create commits, push, pull, or restore scheduled GitHub tasks. When a Git operation is needed, give the user the exact terminal commands to run manually.
 - The optional `npm run github:check` command only reads staged changes for private-file checks. It must never stage, commit, push, or update the journal.
+
+## Mandatory authentication
+
+- Authentication requires a verified Supabase session at AAL2 and a verified TOTP factor for every account. Never fall back to local password checks or a stored current-user snapshot when auth resources or the backend are unavailable. Preserve local financial data; MFA does not enable financial uploads.
+- Add code comments only where a necessary design decision or non-obvious logic needs explanation.

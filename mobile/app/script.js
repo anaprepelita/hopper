@@ -685,7 +685,8 @@ function setActiveTab(targetFormId) {
 }
 
 function getCurrentUser() {
-  return JSON.parse(localStorage.getItem(CURRENT_USER_KEY));
+  const user = JSON.parse(localStorage.getItem(CURRENT_USER_KEY));
+  return window.HopperAuth?.canOpen(user) ? user : null;
 }
 
 function saveCurrentUser(user) {
@@ -752,6 +753,7 @@ function renderExpenseOverview(expenses) {
 }
 
 function showApp(user) {
+  if (!window.HopperAuth?.canOpen(user)) return false;
   clearExpenseNotification();
   clearAchievementNotification();
   companionAccount = null;
@@ -767,6 +769,7 @@ function showApp(user) {
   document.getElementById("profile-photo-input").value = "";
   document.getElementById("profile-photo-status").textContent = "";
   showScreen("app");
+  return true;
 }
 
 function loadAccountForms(user) {
@@ -1509,56 +1512,24 @@ document.getElementById("header-profile-button").addEventListener("click", () =>
   setActiveView("settings");
 });
 
-registerForm.addEventListener("submit", async (event) => {
+registerForm.addEventListener("submit", (event) => {
   event.preventDefault();
-
+  const status = document.getElementById("register-status");
   const name = document.getElementById("register-name").value.trim();
   const email = document.getElementById("register-email").value.trim();
-  const password = document.getElementById("register-password").value.trim();
-
-  if (!name || !email || !password) {
-    alert(hopperText("Completează toate câmpurile."));
-    return;
-  }
-
-  const users = getUsers();
-  const userExists = users.some((user) => user.email.toLowerCase() === email.toLowerCase());
-
-  if (userExists) {
-    const status = document.getElementById("register-status");
-    status.textContent = hopperText("Există deja un cont cu acest email.");
+  const password = document.getElementById("register-password").value;
+  if (!window.HopperAuth) {
+    status.textContent = hopperText("Conectarea securizată nu este disponibilă momentan.");
     status.hidden = false;
     return;
   }
-
-  users.push({
-    name,
-    email,
-    password,
-    expenses: [],
-    incomes: [],
-    currency: "RON",
-  });
-
-  try {
-    saveUsers(users);
-    if (window.HopperPersistence) await window.HopperPersistence.flush();
-  } catch {
-    const status = document.getElementById("register-status");
-    status.textContent = hopperText("Contul nu a putut fi confirmat. Încearcă din nou sau conectează-te dacă a fost deja salvat.");
+  if (password.length < 8) {
+    status.textContent = hopperText("Alege o parolă de cel puțin 8 caractere.");
     status.hidden = false;
+    document.getElementById("register-password").focus();
     return;
   }
-  registerForm.reset();
-  document.getElementById("register-status").hidden = true;
-  setActiveTab("login-form");
-  document.getElementById("login-email").value = email;
-  document.getElementById("login-password").value = "";
-  loginStatus.textContent = hopperText("Contul tău a fost creat. Acum te poți autentifica.");
-  loginStatus.dataset.kind = "success";
-  loginStatus.setAttribute("role", "status");
-  loginStatus.hidden = false;
-  document.getElementById("login-password").focus();
+  void window.HopperAuth.register({ name, email, password });
 });
 
 function clearLoginMessage() {
@@ -1583,7 +1554,7 @@ loginForm.addEventListener("submit", (event) => {
   clearLoginMessage();
 
   const email = document.getElementById("login-email").value.trim();
-  const password = document.getElementById("login-password").value.trim();
+  const password = document.getElementById("login-password").value;
 
   if (!email || !password) {
     showLoginError(hopperText("Completează emailul și parola pentru a te conecta."), [!email ? "login-email" : "login-password"]);
@@ -1593,24 +1564,11 @@ loginForm.addEventListener("submit", (event) => {
     showLoginError(hopperText("Introdu o adresă de email validă."), ["login-email"]);
     return;
   }
-  const users = getUsers();
-  const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-
-  if (!user) {
-    showLoginError(hopperText("Nu există un cont cu acest email. Creează un cont."), ["login-email"]);
+  if (!window.HopperAuth) {
+    showLoginError(hopperText("Conectarea securizată nu este disponibilă momentan."), ["login-email"]);
     return;
   }
-  if (user.cloudAccountId && !user.password) {
-    showLoginError(hopperText("Conectarea acestui cont nu este disponibilă momentan."), ["login-email"]);
-    return;
-  }
-  if (user.password !== password) {
-    showLoginError(hopperText("Parola este incorectă. Încearcă din nou."), ["login-password"]);
-    return;
-  }
-
-  saveCurrentUser(user);
-  showApp(user);
+  void window.HopperAuth.signIn({ email, password });
 });
 
 expenseForm.addEventListener("submit", (event) => {
@@ -1935,21 +1893,33 @@ document.getElementById("expense-date").value = dateInputValue(today);
 document.getElementById("income-date").value = dateInputValue(today);
 renderCalendar();
 
-const currentUser = getCurrentUser();
-if (currentUser) {
-  const users = getUsers();
-  const user = users.find((u) => u.email.toLowerCase() === currentUser.email.toLowerCase());
-  if (user) {
-    showApp(user);
-  }
-}
 
 // A small bridge keeps online transport separate from the local financial model.
 window.HopperApp = {
   currentUser: getCurrentUser,
   users: getUsers,
   openUser: showApp,
+  lock() { showScreen("auth"); },
+  async acceptAuthenticated(user) {
+    if (!window.HopperAuth?.canAccept(user)) throw Error("mfa-required");
+    const previousUsers = localStorage.getItem(USERS_KEY);
+    const previousCurrent = localStorage.getItem(CURRENT_USER_KEY);
+    const users = getUsers();
+    const index = users.findIndex(value => value.email.toLowerCase() === user.email.toLowerCase());
+    if (index < 0) users.push(user); else users[index] = user;
+    try {
+      saveUsers(users); saveCurrentUser(user);
+      if (window.HopperPersistence) await window.HopperPersistence.flush();
+    } catch (error) {
+      for (const [key, value] of [[USERS_KEY, previousUsers], [CURRENT_USER_KEY, previousCurrent]]) {
+        if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value);
+      }
+      window.HopperPersistence?.schedule();
+      throw error;
+    }
+  },
   applyCloud(user) {
+    if (!window.HopperAuth?.canOpen(user)) throw Error("mfa-required");
     const users = getUsers();
     const index = users.findIndex(item => item.email.toLowerCase() === user.email.toLowerCase());
     const previous = localStorage.getItem(USERS_KEY);
@@ -1970,3 +1940,5 @@ function onLanguageChanged() {
   document.querySelectorAll("[aria-invalid=true][required]").forEach(field => showFieldValidation(field, fieldValidationMessage(field)));
 }
 document.addEventListener("hopper:language", onLanguageChanged);
+
+void window.HopperAuth?.resume();

@@ -312,19 +312,14 @@
     localStorage.setItem(stateKey(auth), JSON.stringify(state));
   }
   function ensureClient() {
+    if (!window.HopperAuth) throw Error("mfa-required");
     if (!configured) throw Error("not-configured");
     if (!client) {
-      client = window.supabase.createClient(config.url, config.publishableKey, {
-        auth: {
-          storageKey: `hopper_cloud_session:${config.url}`,
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: false,
-        },
-      });
+      client = window.HopperAuth.getClient();
       client.auth.onAuthStateChange((event, next) => {
+        const changed = session?.user.id !== next?.user.id || event === "SIGNED_IN";
         session = next;
-        if (event === "SIGNED_OUT") {
+        if (changed || event === "SIGNED_OUT") {
           generation++;
           clearTimeout(timer);
         }
@@ -374,7 +369,7 @@
       queued = true;
       return;
     }
-    if (!session || !matches(app.currentUser(), session)) return;
+    if (!session || !window.HopperAuth?.canOpen(app.currentUser()) || !matches(app.currentUser(), session)) return;
     if (!navigator.onLine) {
       status("Offline. Modificările locale se vor sincroniza când revine conexiunea.");
       schedule();
@@ -447,77 +442,19 @@
     }
   }
   async function connect(register) {
-    if (connecting || busy) return;
-    connecting = true;
-    generation++;
-    const token = generation;
-    const email = document.getElementById("cloud-email").value.trim().toLowerCase();
+    if (!window.HopperAuth) {
+      status("Conectarea securizată nu este disponibilă momentan.");
+      return;
+    }
+    const email = document.getElementById("cloud-email").value.trim();
     const password = document.getElementById("cloud-password").value;
     const name = document.getElementById("cloud-name").value.trim();
-    const importLocal = document.getElementById("cloud-import").checked;
-    document.querySelectorAll("#cloud-form button").forEach((button) => {
-      button.disabled = true;
-    });
     try {
-      ensureClient();
-      status("Se conectează…");
-      const response = register
-        ? await client.auth.signUp({
-            email,
-            password,
-            options: { data: { name: name || email.split("@")[0] } },
-          })
-        : await client.auth.signInWithPassword({ email, password });
-      if (response.error) throw response.error;
-      if (token !== generation) return;
-      if (!response.data.session) {
-        status("Confirmă emailul, apoi conectează-te din nou.");
-        return;
-      }
-      session = response.data.session;
-      const remote = await remoteRow(session);
-      if (token !== generation) return;
-      const existing = app.users().find((user) => user.email.toLowerCase() === email);
-      if (existing?.cloudAccountId && !matches(existing, session)) throw Error("different-account");
-      const linked = matches(existing, session);
-      const hasLocal =
-        (existing &&
-          ["expenses", "incomes", "savingsContributions"].some((key) => existing[key]?.length)) ||
-        existing?.monthlyBudget ||
-        Object.keys(existing?.monthlyBudgets || {}).length ||
-        existing?.savingsGoal ||
-        Object.keys(existing?.savingsGoals || {}).length;
-      if (hasLocal && !linked && !importLocal) throw Error("import-required");
-      let user = existing
-        ? clone(existing)
-        : {
-            name: name || session.user.user_metadata?.name || email.split("@")[0],
-            email,
-            expenses: [],
-            incomes: [],
-            currency: "RON",
-          };
-      identifyRecords(user, true);
-      user.cloudAccountId = session.user.id;
-      user.cloudProject = config.url;
-      if (!linked && !importLocal && remote.revision) user = applySnapshot(user, remote.data);
-      // A missing baseline means an explicit first import; conflicting goal/budget values are reviewed.
-      if (!linked)
-        writeState(session, { base: importLocal ? {} : remote.data, revision: remote.revision });
-      app.applyCloud(user);
-      app.openUser(user);
-      document.getElementById("cloud-password").value = "";
-      document.getElementById("cloud-dialog").close();
-    } catch (error) {
-      if (token === generation) status(errorStatus(error));
-    } finally {
-      connecting = false;
-      document.querySelectorAll("#cloud-form button").forEach((button) => {
-        button.disabled = !configured;
-      });
-    }
-    if (session && matches(app.currentUser(), session)) await synchronize();
+      if (register) await window.HopperAuth.register({ name, email, password });
+      else await window.HopperAuth.signIn({ email, password });
+    } finally { document.getElementById("cloud-password").value = ""; }
   }
+
   async function disconnect() {
     generation++;
     clearTimeout(timer);
@@ -525,7 +462,7 @@
     const previous = session;
     session = null;
     status("Sincronizarea este oprită pe acest dispozitiv. Datele locale sunt păstrate.");
-    if (previous && client) await client.auth.signOut({ scope: "local" });
+    if (previous && client && !window.HopperAuth) await client.auth.signOut({ scope: "local" });
   }
   document.querySelectorAll("[data-open-cloud]").forEach((button) =>
     button.addEventListener("click", () => {
@@ -607,10 +544,11 @@
   status(statusKey);
   if (configured) {
     try {
+      const restoreGeneration = generation;
       ensureClient()
         .auth.getSession()
         .then(({ data }) => {
-          if (connecting) return;
+          if (connecting || restoreGeneration !== generation) return;
           session = data.session;
           if (session && matches(app.currentUser(), session)) synchronize();
         })

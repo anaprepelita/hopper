@@ -2,6 +2,21 @@
 
 Aici sunt consemnate schimbările zilnice ale proiectului, după data din România. Jurnalul este completat manual înainte de commit și push.
 
+## 2026-10-08
+
+### Autentificare cu doi factori
+
+- Pregătită autentificarea Supabase cu Google/Microsoft Authenticator, obligatorie pentru toate conturile.
+- Adăugate confirmarea emailului prin cod în aplicație, retrimiterea codului și configurarea TOTP prin QR sau cheie.
+- Păstrate datele conturilor locale la asocierea cu identitatea verificată; conturile noi nu salvează parola în datele locale.
+- Blocat accesul la buget fără verificare, inclusiv pentru sesiuni locale vechi, resurse lipsă și răspunsuri întârziate după anulare.
+- Separată autentificarea de sincronizarea financiară; conectarea nu activează încărcarea datelor.
+- Adăugată migrarea SQL care cere MFA pentru accesul la datele online.
+- Corectată restaurarea sesiunii de sincronizare pentru a ignora răspunsurile depășite.
+- Adăugate teste pentru înregistrare, verificare, anulare, persistență și compatibilitatea conturilor.
+- Documentată configurarea Supabase. Activarea pe un proiect real, livrarea emailurilor și verificarea pe telefon rămân de făcut.
+- Clarificat că operațiunile Git sunt executate manual de utilizator.
+
 ## 2026-10-07
 
 ### Control manual al modificărilor
