@@ -1121,15 +1121,15 @@ select:focus {
 #expense-category-value { min-width: 0; overflow-wrap: anywhere; }
 
 
-.mfa-badge { width: 44px; height: 44px; display: grid; place-items: center; margin: 0 auto 12px; border: 2px solid var(--w-mauve); border-radius: 14px; background: var(--w-lilac); color: var(--w-ink); font-size: 24px; box-shadow: 3px 3px 0 var(--w-blush); }
-#mfa-form { min-width: 0; }
-.mfa-qr { display: block; width: min(192px, 100%); height: auto; margin: 16px auto; padding: 8px; border: 2px solid var(--w-mauve); border-radius: 12px; background: white; }
-#mfa-manual { margin: 12px 0 18px; padding: 12px; border: 2px dashed var(--w-mauve); border-radius: 12px; background: var(--w-cream); }
-#mfa-manual summary { cursor: pointer; min-height: 44px; align-content: center; font-weight: 800; }
-#mfa-secret { width: 100%; min-width: 0; font-family: Nunito, sans-serif; }
-#mfa-copy { margin-top: 10px; }
-#mfa-code { text-align: center; letter-spacing: .3em; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
-#mfa-form .mfa-recovery-note { margin-top: 16px; font-size: .8rem; }
-#mfa-setup[hidden] { display: none; }
 
-#mfa-resend[hidden] { display: none; }
+.email-code-badge { width: 44px; height: 44px; display: grid; place-items: center; margin: 0 auto 12px; border: 2px solid var(--w-mauve); border-radius: 14px; background: var(--w-lilac); color: var(--w-ink); font-size: 24px; box-shadow: 3px 3px 0 var(--w-blush); }
+#email-code-form { min-width: 0; }
+.email-code-address { margin: 0 0 18px; color: var(--w-ink); font-weight: 800; overflow-wrap: anywhere; }
+#email-code { text-align: center; letter-spacing: .3em; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.auth-service-status { margin-bottom: 18px; }
+.auth-service-status[hidden] { display: none; }
+.auth-form .auth-security-note { margin: 0 0 18px; font-size: .85rem; }
+
+.auth-recovery-link { display: block; width: auto; min-height: 44px; margin: -4px 0 8px auto; padding: 8px 12px; border: 1px solid var(--w-mauve); border-radius: 12px; background: var(--w-lilac); color: var(--w-ink); font: inherit; font-size: .85rem; font-weight: 800; cursor: pointer; }
+.auth-recovery-link:focus-visible { outline: 2px dashed var(--w-ink); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { .auth-recovery-link:hover { background: var(--w-blush); } }

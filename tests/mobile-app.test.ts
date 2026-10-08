@@ -157,12 +157,16 @@ describe("Packaged mobile app", () => {
     expect(localStorage.getItem("expenses_current_user")).toBe(beforeCurrent);
   });
 
-  it("cancels the MFA step before navigating a hidden dashboard tab", () => {
+  it.each([
+    ["email-code-form", "email-code-cancel"],
+    ["recovery-form", "recovery-cancel"],
+    ["reset-password-form", "reset-password-cancel"],
+  ])("cancels %s before navigating a hidden dashboard tab", (form, button) => {
     document.querySelector(".view-tab.active")!.classList.remove("active");
     document.querySelector('.view-tab[data-view="settings"]')!.classList.add("active");
-    document.getElementById("mfa-form")!.classList.add("active");
+    document.getElementById(form)!.classList.add("active");
     const cancel = vi.fn();
-    document.getElementById("mfa-cancel")!.addEventListener("click", cancel);
+    document.getElementById(button)!.addEventListener("click", cancel);
     expect(handleNativeBack(document)).toBe(true);
     expect(cancel).toHaveBeenCalledOnce();
     expect(document.querySelector('.view-tab[data-view="settings"]')).toHaveClass("active");

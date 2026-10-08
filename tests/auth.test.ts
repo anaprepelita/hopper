@@ -8,6 +8,7 @@ const source = readFileSync("mobile/app/auth.js", "utf8");
 const financial = readFileSync("mobile/app/script.js", "utf8");
 const win = window as unknown as Record<string, any>;
 const email = "student@example.test";
+const password = "new-test-password";
 const legacy = {
   email,
   name: "Ana",
@@ -24,84 +25,71 @@ const serverUser = {
   id: "account-a",
   email,
   email_confirmed_at: "2026-10-08T00:00:00Z",
+  is_anonymous: false,
   user_metadata: { name: "Ana" },
 };
 const value = (id: string) => document.getElementById(id) as HTMLInputElement;
 const auth = () => win["HopperAuth"];
 const locked = () => expect(document.getElementById("app-screen")).toHaveClass("hidden");
-
+const opened = () => expect(document.getElementById("app-screen")).not.toHaveClass("hidden");
+const codeVisible = () => expect(document.getElementById("email-code-form")).toHaveClass("active");
+function token(user = serverUser, methods = ["password"]) {
+  return (
+    "header." +
+    btoa(
+      JSON.stringify({
+        role: "authenticated",
+        sub: user.id,
+        email: user.email,
+        is_anonymous: false,
+        amr: methods.map((method) => ({ method, timestamp: 1791493200 })),
+      }),
+    ) +
+    ".signature"
+  );
+}
 function fakeCloud() {
-  let session: any = null,
-    level = "aal1";
-  let factors: any[] = [];
+  let user = structuredClone(serverUser),
+    session: any = null;
+  let codeType = "signup";
   const listeners: Array<(event: string, session: any) => void> = [];
   const notify = (event: string) => listeners.forEach((callback) => callback(event, session));
+  const makeSession = (methods = ["password"]) => ({ user, access_token: token(user, methods) });
   const client = {
     auth: {
-      onAuthStateChange: vi.fn((callback: (event: string, session: any) => void) => {
+      onAuthStateChange: vi.fn((callback) => {
         listeners.push(callback);
+        return { data: {} };
       }),
-      stopAutoRefresh: vi.fn(),
       getSession: vi.fn(async (): Promise<any> => ({ data: { session }, error: null })),
-      getUser: vi.fn(async (): Promise<any> => ({ data: { user: serverUser }, error: null })),
+      getUser: vi.fn(async (): Promise<any> => ({ data: { user }, error: null })),
       signInWithPassword: vi.fn(async (): Promise<any> => {
-        session = { user: serverUser };
+        session = makeSession();
         notify("SIGNED_IN");
-        return { data: { session, user: serverUser }, error: null };
+        return { data: { user, session }, error: null };
       }),
-      signUp: vi.fn(async (): Promise<any> => ({
-        data: { session: null, user: serverUser },
-        error: null,
-      })),
-      verifyOtp: vi.fn(async (): Promise<any> => {
-        session = { user: serverUser };
-        return { data: { session }, error: null };
+      signUp: vi.fn(async (input: any): Promise<any> => {
+        user.user_metadata = input.options.data;
+        codeType = "signup";
+        return { data: { user, session: null }, error: null };
       }),
       resend: vi.fn(async (): Promise<any> => ({ data: {}, error: null })),
+      resetPasswordForEmail: vi.fn(async (): Promise<any> => {
+        codeType = "recovery";
+        return { data: {}, error: null };
+      }),
+      verifyOtp: vi.fn(async (): Promise<any> => {
+        session = makeSession([codeType === "recovery" ? "otp" : "email/signup"]);
+        notify(codeType === "recovery" ? "PASSWORD_RECOVERY" : "SIGNED_IN");
+        return { data: { user, session }, error: null };
+      }),
+      updateUser: vi.fn(async (): Promise<any> => ({ data: { user }, error: null })),
       signOut: vi.fn(async () => {
         session = null;
         notify("SIGNED_OUT");
         return { error: null };
       }),
-      mfa: {
-        listFactors: vi.fn(async (): Promise<any> => ({
-          data: { totp: factors.filter((factor) => factor.status === "verified"), all: factors },
-          error: null,
-        })),
-        getAuthenticatorAssuranceLevel: vi.fn(async (): Promise<any> => ({
-          data: { currentLevel: level, nextLevel: "aal2" },
-          error: null,
-        })),
-        enroll: vi.fn(async (): Promise<any> => {
-          factors.push({
-            id: "factor-a",
-            factor_type: "totp",
-            status: "unverified",
-            friendly_name: "Hopper",
-          });
-          return {
-            data: {
-              id: "factor-a",
-              totp: {
-                qr_code: '<svg xmlns="http://www.w3.org/2000/svg"/>',
-                secret: "TESTSETUPKEY",
-              },
-            },
-            error: null,
-          };
-        }),
-        challengeAndVerify: vi.fn(async (): Promise<any> => {
-          level = "aal2";
-          factors = [
-            { id: "factor-a", factor_type: "totp", status: "verified", friendly_name: "Hopper" },
-          ];
-          return { data: {}, error: null };
-        }),
-        unenroll: vi.fn(async ({ factorId }: { factorId: string }) => {
-          factors = factors.filter((factor) => factor.id !== factorId);
-          return { error: null };
-        }),
-      },
+      stopAutoRefresh: vi.fn(),
     },
     from: vi.fn(),
     rpc: vi.fn(),
@@ -109,23 +97,19 @@ function fakeCloud() {
   return {
     client,
     sdk: { createClient: vi.fn(() => client) },
-    verified(aal = "aal1") {
-      factors = [{ id: "factor-a", factor_type: "totp", status: "verified" }];
-      level = aal;
+    restore(methods = ["password"]) {
+      session = makeSession(methods);
     },
-    restore() {
-      session = { user: serverUser };
+    changeUser(next: any) {
+      user = next;
     },
-    signOut: () => {
+    refresh(methods = ["password"]) {
+      session = makeSession(methods);
+      notify("TOKEN_REFRESHED");
+    },
+    signOut() {
       session = null;
       notify("SIGNED_OUT");
-    },
-    refresh(aal: string) {
-      session = {
-        user: serverUser,
-        access_token: "header." + btoa(JSON.stringify({ aal })) + ".signature",
-      };
-      notify("TOKEN_REFRESHED");
     },
   };
 }
@@ -156,14 +140,22 @@ async function boot(cloud = fakeCloud(), configured = true, user: any = legacy) 
   );
   return cloud;
 }
-async function signIn() {
-  await auth().signIn({ email, password: "server-password" });
-}
-async function verify() {
-  value("mfa-code").value = "123456";
+const signIn = () => auth().signIn({ email, password });
+const register = () => auth().register({ name: "Ana", email, password });
+async function verify(code = "123456") {
+  value("email-code").value = code;
   await auth().verify();
 }
-
+async function recover() {
+  auth().startRecovery();
+  value("recovery-email").value = email;
+  await auth().recover();
+}
+async function reset(next = "changed-test-password", confirmation = next) {
+  value("reset-password").value = next;
+  value("reset-password-confirm").value = confirmation;
+  await auth().savePassword();
+}
 afterEach(() => {
   auth()?.dispose();
   win["HopperApp"]?.dispose();
@@ -175,397 +167,496 @@ afterEach(() => {
     "supabase",
   ])
     delete win[key];
+  vi.useRealTimers();
   vi.restoreAllMocks();
   document.body.replaceChildren();
   localStorage.clear();
 });
 
-describe("Mandatory authenticator MFA", () => {
-  it("does not trust a stored local user when the backend is unconfigured", async () => {
+describe("Email/password authentication and recovery", () => {
+  it("keeps local records locked without configuration and leaves an actionable warning", async () => {
     const cloud = await boot(undefined, false);
-    locked();
-    expect(document.getElementById("login-status")?.textContent).toContain("nu este disponibilă");
+    const before = localStorage.getItem("expenses_users");
+    value("login-email").value = email;
+    value("login-password").value = password;
+    document.querySelector<HTMLButtonElement>("#login-form button[type=submit]")!.click();
+    await vi.waitFor(() =>
+      expect(value("login-status").textContent).toContain("nu este disponibilă"),
+    );
+    expect(document.getElementById("auth-service-status")!.hidden).toBe(false);
     expect(cloud.sdk.createClient).not.toHaveBeenCalled();
-    const before = localStorage.getItem("expenses_users");
-    value("income-amount").value = "50";
-    document
-      .getElementById("income-form")!
-      .dispatchEvent(new Event("submit", { cancelable: true }));
     expect(localStorage.getItem("expenses_users")).toBe(before);
-    expect(auth().canOpen(legacy)).toBe(false);
-  });
-
-  it("cannot open the dashboard without the authentication controller", () => {
-    localStorage.setItem("expenses_users", JSON.stringify([legacy]));
-    localStorage.setItem("expenses_current_user", JSON.stringify(legacy));
-    document.body.innerHTML = new DOMParser().parseFromString(html, "text/html").body.innerHTML;
-    document.querySelectorAll<HTMLDialogElement>("dialog").forEach((dialog) => {
-      dialog.close = vi.fn();
-    });
-    new Function(financial)();
-    expect(win["HopperApp"].currentUser()).toBeNull();
-    expect(win["HopperApp"].openUser(legacy)).toBe(false);
     locked();
   });
 
-  it("enrolls new factors but keeps data unchanged until the first code is verified", async () => {
+  it("uses the requested placeholders and retains login and password recovery controls", async () => {
+    await boot();
+    for (const id of ["login-email", "register-email", "recovery-email"])
+      expect(value(id)).toHaveAttribute("placeholder", "Introdu email");
+    for (const id of [
+      "login-password",
+      "register-password",
+      "reset-password",
+      "reset-password-confirm",
+    ])
+      expect(value(id)).toHaveAttribute("placeholder", "Introdu parola");
+    expect(document.querySelector("#login-form button[type=submit]")?.textContent).toBe(
+      "Intră în cont",
+    );
+    expect(value("forgot-password").textContent).toBe("Ai uitat parola?");
+  });
+
+  it("validates missing email, malformed email and missing password without server calls", async () => {
     const cloud = await boot();
-    const before = localStorage.getItem("expenses_users");
-    await signIn();
-    locked();
-    expect(cloud.client.auth.mfa.enroll).toHaveBeenCalledWith({
-      factorType: "totp",
-      friendlyName: "Hopper",
-      issuer: "Hopper",
+    const form = document.getElementById("login-form")!;
+    form.dispatchEvent(new Event("submit", { cancelable: true }));
+    expect(value("login-status").textContent).toContain("Completează emailul");
+    value("login-email").value = "invalid";
+    form.dispatchEvent(new Event("submit", { cancelable: true }));
+    expect(value("login-status").textContent).toContain("email validă");
+    value("login-email").value = email;
+    form.dispatchEvent(new Event("submit", { cancelable: true }));
+    expect(value("login-status").textContent).toContain("Completează parola");
+    expect(cloud.client.auth.signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it("normalizes email but preserves password characters and validates the session on the server", async () => {
+    const cloud = await boot();
+    value("login-email").value = "Student@Example.test";
+    value("login-password").value = " password with spaces ";
+    document.querySelector<HTMLButtonElement>("#login-form button[type=submit]")!.click();
+    await vi.waitFor(opened);
+    expect(cloud.client.auth.signInWithPassword).toHaveBeenCalledWith({
+      email,
+      password: " password with spaces ",
     });
-    expect(document.getElementById("mfa-form")).toHaveClass("active");
-    expect(value("mfa-secret").value).toBe("TESTSETUPKEY");
-    expect(localStorage.getItem("expenses_users")).toBe(before);
-    expect([...Object.values(localStorage)].join()).not.toContain("TESTSETUPKEY");
-    await verify();
-    expect(document.getElementById("app-screen")).not.toHaveClass("hidden");
-    const stored = JSON.parse(localStorage.getItem("expenses_users")!)[0];
-    expect(stored).toEqual({
+    expect(cloud.client.auth.getUser).toHaveBeenCalledWith(token());
+    expect(value("login-password").value).toBe("");
+    expect([...Object.values(localStorage)].join()).not.toContain("password with spaces");
+    expect(cloud.client.rpc).not.toHaveBeenCalled();
+  });
+
+  it("preserves existing financial records, photos and unrelated fields after login", async () => {
+    await boot();
+    await signIn();
+    expect(JSON.parse(localStorage.getItem("expenses_users")!)[0]).toEqual({
       ...legacy,
       authAccountId: "account-a",
       authProject: "https://project.supabase.co",
     });
-    expect(stored.cloudAccountId).toBeUndefined();
-    expect(cloud.client.rpc).not.toHaveBeenCalled();
-    expect(value("mfa-secret").value).toBe("");
-    expect(document.getElementById("mfa-qr")).not.toHaveAttribute("src");
-    expect(auth().canOpen(stored)).toBe(true);
+    opened();
   });
 
-  it("asks existing TOTP users for a code without enrolling another factor", async () => {
-    const cloud = fakeCloud();
-    cloud.verified();
-    await boot(cloud);
-    await signIn();
-    locked();
-    expect(document.getElementById("mfa-setup")).toHaveAttribute("hidden");
-    expect(cloud.client.auth.mfa.enroll).not.toHaveBeenCalled();
-    await verify();
-    expect(document.getElementById("app-screen")).not.toHaveClass("hidden");
-  });
-
-  it.each(["", "123", "abcdef", "1234567"])(
-    "rejects a malformed code without sending it (%s)",
-    async (code) => {
-      const cloud = await boot();
-      await signIn();
-      value("mfa-code").value = code;
-      await auth().verify();
-      locked();
-      expect(cloud.client.auth.mfa.challengeAndVerify).not.toHaveBeenCalled();
-      expect(value("mfa-code")).toHaveAttribute("aria-invalid", "true");
-      expect(document.getElementById("mfa-status")?.textContent).toContain("6 cifre");
-    },
-  );
-
-  it("keeps a failed code on the MFA screen and allows a fresh code", async () => {
+  it.each([
+    [{ code: "invalid_credentials" }, "Emailul sau parola sunt incorecte"],
+    [{ message: "offline" }, "Verifică internetul"],
+    [{ code: "over_request_rate_limit", status: 429 }, "Prea multe"],
+  ])("shows login errors without opening the account (%o)", async (error, expected) => {
     const cloud = await boot();
+    cloud.client.auth.signInWithPassword.mockResolvedValueOnce({ data: {}, error });
     await signIn();
-    cloud.client.auth.mfa.challengeAndVerify.mockResolvedValueOnce({
-      data: null,
-      error: { code: "mfa_verification_failed" },
-    });
-    await verify();
+    expect(value("login-status").textContent).toContain(expected);
     locked();
-    expect(document.getElementById("mfa-status")?.textContent).toContain("incorect sau a expirat");
-    expect(document.getElementById("mfa-form")).toHaveClass("active");
-    await verify();
-    expect(document.getElementById("app-screen")).not.toHaveClass("hidden");
   });
 
-  it("revalidates restored sessions with the server instead of trusting local AAL claims", async () => {
-    const cloud = fakeCloud();
-    cloud.restore();
-    cloud.verified("aal2");
-    cloud.client.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Invalid JWT" },
-    });
-    const original = JSON.stringify([legacy]);
-    await boot(cloud);
-    locked();
-    expect(cloud.client.auth.getUser).toHaveBeenCalled();
-    expect(localStorage.getItem("expenses_users")).toBe(original);
-  });
-
-  it("restores a valid AAL2 session while preserving the existing account", async () => {
-    const cloud = fakeCloud();
-    cloud.restore();
-    cloud.verified("aal2");
-    await boot(cloud);
-    expect(document.getElementById("app-screen")).not.toHaveClass("hidden");
-    expect(cloud.client.auth.mfa.enroll).not.toHaveBeenCalled();
-    expect(JSON.parse(localStorage.getItem("expenses_users")!)[0].expenses).toEqual(
-      legacy.expenses,
-    );
-  });
-
-  it("does not resume a server session after explicit local logout", async () => {
-    const cloud = fakeCloud();
-    cloud.restore();
-    cloud.verified("aal2");
-    await boot(cloud, true, null);
-    locked();
-    expect(cloud.client.auth.getUser).not.toHaveBeenCalled();
-  });
-
-  it("requires setup even for an AAL2 session with no verified TOTP factor", async () => {
-    const cloud = fakeCloud();
-    cloud.verified("aal2");
-    cloud.client.auth.mfa.listFactors.mockResolvedValue({
-      data: { totp: [], all: [] },
-      error: null,
-    });
-    await boot(cloud);
-    await signIn();
-    locked();
-    expect(cloud.client.auth.mfa.enroll).toHaveBeenCalled();
-  });
-
-  it("cannot bypass MFA with a successful challenge that leaves the session at AAL1", async () => {
-    const cloud = fakeCloud();
-    cloud.verified();
-    await boot(cloud);
-    await signIn();
-    cloud.client.auth.mfa.challengeAndVerify.mockResolvedValue({ data: {}, error: null });
-    await verify();
-    locked();
-    expect(auth().canOpen(legacy)).toBe(false);
-  });
-
-  it("ignores a verification response arriving after cancellation", async () => {
+  it.each([
+    [{ name: "", email, password }, "Completează numele"],
+    [{ name: "Ana", email: "", password }, "email validă"],
+    [{ name: "Ana", email, password: "" }, "minimum 8"],
+    [{ name: "Ana", email, password: "short" }, "minimum 8"],
+  ])("validates registration before sending credentials (%o)", async (input, expected) => {
     const cloud = await boot();
-    await signIn();
-    let release!: (response: any) => void;
-    cloud.client.auth.mfa.challengeAndVerify.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          release = resolve;
-        }),
-    );
-    value("mfa-code").value = "123456";
-    const pending = auth().verify();
-    await auth().cancel();
-    release({ data: {}, error: null });
-    await pending;
+    await auth().register(input);
+    expect(value("register-status").textContent).toContain(expected);
+    expect(cloud.client.auth.signUp).not.toHaveBeenCalled();
     locked();
-    expect(localStorage.getItem("expenses_current_user")).toBeNull();
-    expect(JSON.parse(localStorage.getItem("expenses_users")!)).toEqual([legacy]);
-    expect(value("mfa-secret").value).toBe("");
-    expect(cloud.client.auth.signOut).toHaveBeenCalled();
   });
 
-  it("removes an unfinished enrollment on cancel without deleting an existing factor", async () => {
-    const cloud = await boot();
-    await signIn();
-    await auth().cancel();
-    expect(cloud.client.auth.mfa.unenroll).toHaveBeenCalledWith({ factorId: "factor-a" });
-    cloud.client.auth.mfa.unenroll.mockClear();
-    cloud.verified();
-    await signIn();
-    await auth().cancel();
-    expect(cloud.client.auth.mfa.unenroll).not.toHaveBeenCalled();
-  });
-
-  it("keeps accounts intact on invalid credentials and on offline errors", async () => {
-    const cloud = await boot();
-    const before = localStorage.getItem("expenses_users");
-    cloud.client.auth.signInWithPassword.mockResolvedValueOnce({
-      data: {},
-      error: { code: "invalid_credentials" },
-    });
-    await signIn();
-    expect(document.getElementById("login-status")?.textContent).toContain("Emailul sau parola");
-    cloud.client.auth.signInWithPassword.mockRejectedValueOnce(new Error("network"));
-    await signIn();
-    locked();
-    expect(localStorage.getItem("expenses_users")).toBe(before);
-  });
-
-  it("requires email confirmation before enrolling or saving a new account", async () => {
+  it("registers online and creates no local account until email confirmation", async () => {
     const cloud = await boot(undefined, true, null);
-    await auth().register({ name: "Ana", email, password: "private-password" });
-    locked();
-    expect(document.getElementById("mfa-status")?.textContent).toContain(
-      "confirmare primit pe email",
-    );
-    expect(document.getElementById("mfa-status")).toHaveAttribute("data-kind", "success");
-    expect(localStorage.getItem("expenses_users")).toBeNull();
-    expect(cloud.client.auth.mfa.enroll).not.toHaveBeenCalled();
+    document.querySelector<HTMLButtonElement>('[data-target="register-form"]')!.click();
+    value("register-name").value = "Ana";
+    value("register-email").value = email;
+    value("register-password").value = password;
+    document.querySelector<HTMLButtonElement>("#register-form button[type=submit]")!.click();
+    await vi.waitFor(codeVisible);
     expect(cloud.client.auth.signUp).toHaveBeenCalledWith({
       email,
-      password: "private-password",
+      password,
       options: { data: { name: "Ana" } },
     });
+    expect(value("register-password").value).toBe("");
+    expect(localStorage.getItem("expenses_users")).toBeNull();
+    await verify("012345");
+    expect(cloud.client.auth.verifyOtp).toHaveBeenCalledWith({
+      email,
+      token: "012345",
+      type: "email",
+    });
+    const stored = JSON.parse(localStorage.getItem("expenses_users")!)[0];
+    expect(stored.name).toBe("Ana");
+    expect(stored.password).toBeUndefined();
+    opened();
   });
 
-  it("verifies the signup email inside the app, then still requires TOTP", async () => {
+  it("accepts immediate signup only after the returned session is verified", async () => {
     const cloud = await boot(undefined, true, null);
-    await auth().register({ name: "Ana", email, password: "private-password" });
+    cloud.client.auth.signUp.mockImplementationOnce(async () => {
+      cloud.restore(["password"]);
+      return { data: { session: { access_token: token() } }, error: null };
+    });
+    await register();
+    opened();
+    expect(cloud.client.auth.getUser).toHaveBeenCalledWith(token());
+  });
+
+  it("offers a fresh confirmation code when login reports an unconfirmed email", async () => {
+    const cloud = await boot();
+    cloud.client.auth.signInWithPassword.mockResolvedValueOnce({
+      data: {},
+      error: { code: "email_not_confirmed" },
+    });
+    await signIn();
+    expect(cloud.client.auth.resend).toHaveBeenCalledWith({ type: "signup", email });
+    codeVisible();
+    locked();
+  });
+
+  it.each(["", "123", "abcdef", "1234567"])("rejects malformed codes (%s)", async (code) => {
+    const cloud = await boot();
+    await register();
+    await verify(code);
+    expect(cloud.client.auth.verifyOtp).not.toHaveBeenCalled();
+    expect(value("email-code")).toHaveAttribute("aria-invalid", "true");
+    locked();
+  });
+
+  it("keeps expired confirmation codes locked and permits retry", async () => {
+    const cloud = await boot();
+    await register();
+    cloud.client.auth.verifyOtp.mockResolvedValueOnce({ data: {}, error: { code: "otp_expired" } });
+    await verify();
+    locked();
+    codeVisible();
+    expect(value("email-code-status").textContent).toContain("a expirat");
+    await verify("654321");
+    opened();
+  });
+
+  it("resends confirmation only after the cooldown and never retains the password", async () => {
+    const cloud = await boot();
+    vi.useFakeTimers();
+    await register();
+    await auth().resend();
+    expect(cloud.client.auth.resend).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(60000);
+    await auth().resend();
+    expect(cloud.client.auth.resend).toHaveBeenCalledWith({ type: "signup", email });
+    expect(cloud.client.auth.signUp).toHaveBeenCalledTimes(1);
+    locked();
+  });
+
+  it("opens recovery from the visible link and lets the user correct the email", async () => {
+    await boot();
+    value("login-email").value = email;
+    value("forgot-password").click();
+    expect(value("recovery-email").value).toBe(email);
+    expect(value("recovery-form")).toHaveClass("active");
+    value("recovery-cancel").click();
+    expect(value("login-form")).toHaveClass("active");
+    locked();
+  });
+
+  it("does not send recovery requests for invalid email addresses", async () => {
+    const cloud = await boot();
+    auth().startRecovery();
+    value("recovery-email").value = "invalid";
+    await auth().recover();
+    expect(value("recovery-status").textContent).toContain("email validă");
+    expect(cloud.client.auth.resetPasswordForEmail).not.toHaveBeenCalled();
+  });
+
+  it("verifies recovery proof without opening or modifying financial accounts", async () => {
+    const cloud = await boot();
+    const before = localStorage.getItem("expenses_users");
+    await recover();
+    expect(cloud.client.auth.resetPasswordForEmail).toHaveBeenCalledWith(email);
     await verify();
     expect(cloud.client.auth.verifyOtp).toHaveBeenCalledWith({
       email,
       token: "123456",
-      type: "email",
+      type: "recovery",
     });
-    expect(cloud.client.auth.mfa.enroll).toHaveBeenCalled();
-    expect(document.getElementById("mfa-setup")).not.toHaveAttribute("hidden");
+    expect(value("reset-password-form")).toHaveClass("active");
+    expect(localStorage.getItem("expenses_users")).toBe(before);
+    expect(localStorage.getItem("expenses_current_user")).toBeNull();
+    expect(cloud.client.auth.updateUser).not.toHaveBeenCalled();
     locked();
-    expect(localStorage.getItem("expenses_users")).toBeNull();
-    await verify();
-    expect(document.getElementById("app-screen")).not.toHaveClass("hidden");
   });
 
-  it("can resend signup codes and rejects expired email codes without opening the account", async () => {
-    const cloud = await boot(undefined, true, null);
-    await auth().register({ name: "Ana", email, password: "private-password" });
+  it.each([
+    [{ code: "email_address_not_authorized" }, "Trimiterea emailurilor"],
+    [{ status: 429 }, "Prea multe"],
+    [{ message: "offline" }, "Verifică internetul"],
+  ])("shows recovery send failures and keeps records intact (%o)", async (error, expected) => {
+    const cloud = await boot();
+    const before = localStorage.getItem("expenses_users");
+    cloud.client.auth.resetPasswordForEmail.mockResolvedValueOnce({ data: {}, error });
+    await recover();
+    expect(value("recovery-status").textContent).toContain(expected);
+    expect(localStorage.getItem("expenses_users")).toBe(before);
+    locked();
+  });
+
+  it("resends the recovery type after 60 seconds, without sending signup emails", async () => {
+    const cloud = await boot();
+    vi.useFakeTimers();
+    await recover();
     await auth().resend();
-    expect(cloud.client.auth.resend).toHaveBeenCalledWith({ type: "signup", email });
-    cloud.client.auth.verifyOtp.mockResolvedValueOnce({ data: {}, error: { code: "otp_expired" } });
-    await verify();
-    locked();
-    expect(document.getElementById("mfa-status")?.textContent).toContain("Codul de email");
-    expect(document.getElementById("mfa-resend")).not.toHaveAttribute("hidden");
+    expect(cloud.client.auth.resetPasswordForEmail).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(60000);
+    await auth().resend();
+    expect(cloud.client.auth.resetPasswordForEmail).toHaveBeenCalledTimes(2);
+    expect(cloud.client.auth.resend).not.toHaveBeenCalled();
   });
 
-  it("ignores email verification that completes after cancellation", async () => {
-    const cloud = await boot(undefined, true, null);
-    await auth().register({ name: "Ana", email, password: "private-password" });
-    let release!: (response: any) => void;
+  it("requires recovery verification before changing a password", async () => {
+    const cloud = await boot();
+    await reset();
+    expect(cloud.client.auth.updateUser).not.toHaveBeenCalled();
+    locked();
+  });
+
+  it("validates password length and matching confirmation", async () => {
+    const cloud = await boot();
+    await recover();
+    await verify();
+    await reset("short");
+    expect(value("reset-password-status").textContent).toContain("minimum 8");
+    await reset("changed-test-password", "different");
+    expect(value("reset-password-status").textContent).toContain("nu coincid");
+    expect(cloud.client.auth.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("changes the password only online and returns to login with styled success feedback", async () => {
+    const cloud = await boot();
+    const before = localStorage.getItem("expenses_users");
+    await recover();
+    await verify();
+    await reset();
+    expect(cloud.client.auth.updateUser).toHaveBeenCalledWith({
+      password: "changed-test-password",
+    });
+    expect(value("login-form")).toHaveClass("active");
+    expect(value("login-status").textContent).toContain("Parola a fost schimbată");
+    expect(value("login-status")).toHaveAttribute("data-kind", "success");
+    expect(localStorage.getItem("expenses_users")).toBe(before);
+    expect(localStorage.getItem("expenses_current_user")).toBeNull();
+    expect([...Object.values(localStorage)].join()).not.toContain("changed-test-password");
+    expect(value("reset-password").value).toBe("");
+    expect(value("reset-password-confirm").value).toBe("");
+    expect(cloud.client.auth.signOut).toHaveBeenCalled();
+    locked();
+  });
+
+  it("does not change a password when the recovery identity changes or the server fails", async () => {
+    const cloud = await boot();
+    await recover();
+    await verify();
+    cloud.client.auth.getUser.mockRejectedValueOnce(new Error("offline"));
+    await reset();
+    expect(cloud.client.auth.updateUser).not.toHaveBeenCalled();
+    cloud.changeUser({ ...serverUser, id: "other", email: "other@example.test" });
+    await reset();
+    expect(cloud.client.auth.updateUser).not.toHaveBeenCalled();
+    locked();
+  });
+
+  it("leaves failed password updates in recovery without opening the account", async () => {
+    const cloud = await boot();
+    await recover();
+    await verify();
+    cloud.client.auth.updateUser.mockResolvedValueOnce({
+      data: {},
+      error: { code: "same_password" },
+    });
+    await reset();
+    expect(value("reset-password-form")).toHaveClass("active");
+    expect(value("reset-password-status").textContent).toContain("diferită");
+    locked();
+  });
+
+  it("ignores login that completes after cancellation without modifying account records", async () => {
+    const cloud = await boot();
+    const before = localStorage.getItem("expenses_users");
+    let done!: (value: any) => void;
+    const actual = cloud.client.auth.signInWithPassword.getMockImplementation()!;
+    cloud.client.auth.signInWithPassword.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          done = resolve;
+        }),
+    );
+    const pending = signIn();
+    await auth().cancel();
+    done(await actual());
+    await pending;
+    expect(localStorage.getItem("expenses_users")).toBe(before);
+    expect(localStorage.getItem("expenses_current_user")).toBeNull();
+    locked();
+  });
+
+  it("ignores recovery verification that completes after cancellation", async () => {
+    const cloud = await boot();
+    await recover();
+    let done!: (value: any) => void;
+    const actual = cloud.client.auth.verifyOtp.getMockImplementation()!;
     cloud.client.auth.verifyOtp.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
-          release = resolve;
+          done = resolve;
         }),
     );
-    value("mfa-code").value = "123456";
+    value("email-code").value = "123456";
     const pending = auth().verify();
     await auth().cancel();
-    release({ data: { session: { user: serverUser } }, error: null });
+    done(await actual());
     await pending;
+    expect(value("reset-password-form")).not.toHaveClass("active");
+    expect(localStorage.getItem("expenses_current_user")).toBeNull();
     locked();
-    expect(cloud.client.auth.mfa.enroll).not.toHaveBeenCalled();
-    expect(localStorage.getItem("expenses_users")).toBeNull();
   });
 
-  it("stores no password for new accounts after confirmed registration and MFA", async () => {
-    const cloud = await boot(undefined, true, null);
-    cloud.client.auth.signUp.mockResolvedValue({
-      data: { session: { user: serverUser } },
+  it("serializes repeated login submissions", async () => {
+    const cloud = await boot();
+    let done!: (value: any) => void;
+    cloud.client.auth.signInWithPassword.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          done = resolve;
+        }),
+    );
+    const pending = signIn();
+    await signIn();
+    expect(cloud.client.auth.signInWithPassword).toHaveBeenCalledTimes(1);
+    done({ data: {}, error: { code: "invalid_credentials" } });
+    await pending;
+  });
+
+  it("requires a server-validated confirmed identity after password login", async () => {
+    const cloud = await boot();
+    cloud.client.auth.getUser.mockResolvedValueOnce({
+      data: { user: { ...serverUser, email_confirmed_at: null } },
       error: null,
     });
-    await auth().register({ name: "Ana", email, password: "private-password" });
+    await signIn();
     locked();
-    await verify();
-    const stored = JSON.parse(localStorage.getItem("expenses_users")!)[0];
-    expect(stored.password).toBeUndefined();
-    expect(stored.email).toBe(email);
-    expect(stored.authAccountId).toBe("account-a");
+    cloud.client.auth.getUser.mockRejectedValueOnce(new Error("offline"));
+    await signIn();
+    locked();
+    cloud.changeUser({ ...serverUser, id: "other", email: "other@example.test" });
+    await signIn();
+    locked();
   });
 
-  it("rejects an account bound to a different Supabase identity", async () => {
-    const cloud = fakeCloud();
-    cloud.verified();
-    await boot(cloud, true, {
-      ...legacy,
-      authAccountId: "other-id",
-      authProject: "https://project.supabase.co",
-    });
+  it.each([
+    { authAccountId: "other", authProject: "https://project.supabase.co" },
+    { authAccountId: "account-a", authProject: "https://other.supabase.co" },
+    { cloudAccountId: "other", cloudProject: "https://project.supabase.co" },
+  ])("does not overwrite records bound to another identity (%o)", async (binding) => {
+    await boot(undefined, true, { ...legacy, ...binding });
     const before = localStorage.getItem("expenses_users");
     await signIn();
-    await verify();
-    locked();
     expect(localStorage.getItem("expenses_users")).toBe(before);
-    expect(document.getElementById("mfa-status")?.textContent).toContain("nu corespunde");
-  });
-
-  it("does not authorize another identity if it changes during the challenge", async () => {
-    const cloud = await boot();
-    await signIn();
-    cloud.client.auth.getUser.mockResolvedValue({
-      data: { user: { ...serverUser, id: "other-id" } },
-      error: null,
-    });
-    await verify();
     locked();
-    expect(JSON.parse(localStorage.getItem("expenses_users")!)).toEqual([legacy]);
   });
 
-  it("locks the dashboard when the server signs the account out", async () => {
+  it.each([["password"], ["password", "totp"], ["otp"], ["email/signup"]])(
+    "restores a verified existing session (%s)",
+    async (...methods) => {
+      const cloud = fakeCloud();
+      cloud.restore(methods);
+      await boot(cloud);
+      opened();
+      expect(cloud.client.auth.signInWithPassword).not.toHaveBeenCalled();
+      expect(cloud.client.auth.getUser).toHaveBeenCalledWith(token(serverUser, methods));
+    },
+  );
+
+  it("does not restore a recovery-only session as a financial account", async () => {
+    const cloud = fakeCloud();
+    cloud.restore(["recovery"]);
+    await boot(cloud);
+    locked();
+    expect(value("login-status").textContent).toContain("emailul și parola");
+  });
+
+  it("respects explicit logout even with a saved SDK session", async () => {
+    const cloud = fakeCloud();
+    cloud.restore();
+    await boot(cloud, true, null);
+    expect(cloud.client.auth.getSession).not.toHaveBeenCalled();
+    locked();
+  });
+
+  it("locks on server sign-out or a refresh with a different authentication method", async () => {
     const cloud = await boot();
     await signIn();
-    await verify();
+    cloud.refresh(["anonymous"]);
+    locked();
+    expect(value("login-status").textContent).toContain("verificată din nou");
+    await signIn();
     cloud.signOut();
     locked();
-    expect(auth().canOpen(JSON.parse(localStorage.getItem("expenses_current_user")!))).toBe(false);
+    expect(win["HopperApp"].currentUser()).toBeNull();
   });
 
-  it("keeps financial actions locked while the authenticated native copy is still pending", async () => {
+  it("keeps access locked until native persistence finishes", async () => {
     await boot();
-    await signIn();
-    let release!: () => void;
+    let finish!: () => void;
     win["HopperPersistence"] = {
       schedule: vi.fn(),
       flush: vi.fn(
         () =>
           new Promise<void>((resolve) => {
-            release = resolve;
+            finish = resolve;
           }),
       ),
     };
-    const pending = verify();
+    const pending = signIn();
     await vi.waitFor(() => expect(win["HopperPersistence"].flush).toHaveBeenCalled());
-    const before = localStorage.getItem("expenses_users");
-    expect(win["HopperApp"].currentUser()).toBeNull();
-    value("income-amount").value = "50";
-    document
-      .getElementById("income-form")!
-      .dispatchEvent(new Event("submit", { cancelable: true }));
-    expect(localStorage.getItem("expenses_users")).toBe(before);
     locked();
-    release();
+    expect(win["HopperApp"].currentUser()).toBeNull();
+    finish();
     await pending;
-    expect(document.getElementById("app-screen")).not.toHaveClass("hidden");
+    opened();
   });
 
-  it("locks a verified account if the refreshed session loses its second-factor assurance", async () => {
-    const cloud = await boot();
-    await signIn();
-    await verify();
-    cloud.refresh("aal1");
-    locked();
-    expect(document.getElementById("login-status")?.textContent).toContain("verificată din nou");
-    expect(win["HopperApp"].currentUser()).toBeNull();
-  });
-
-  it("never opens an account when persistence fails after MFA", async () => {
-    const cloud = await boot();
-    await signIn();
+  it("rolls back local records if native persistence fails", async () => {
+    await boot();
     const before = localStorage.getItem("expenses_users");
     win["HopperPersistence"] = {
       schedule: vi.fn(),
       flush: vi.fn(async () => {
-        throw new Error("disk");
+        throw Error("disk");
       }),
     };
-    await verify();
-    locked();
+    await signIn();
     expect(localStorage.getItem("expenses_users")).toBe(before);
     expect(auth().canOpen(legacy)).toBe(false);
+    locked();
   });
 
-  it("packages auth as a required dependency before financial startup and requires AAL2 in SQL", () => {
+  it("packages auth before financial code and prepares owner-restricted password access", () => {
     const core = appScripts.filter((entry) => entry.required).map((entry) => entry.src);
     expect(core.indexOf("auth.js")).toBeLessThan(core.indexOf("script.js"));
-    expect(core).toContain("vendor/supabase.js");
-    const sql = readFileSync("supabase/migrations/202610080001_hopper_mfa.sql", "utf8");
+    expect(source).not.toContain(".mfa.");
+    const sql = readFileSync("supabase/migrations/202610080003_hopper_password_auth.sql", "utf8");
+    expect(sql).toContain("drop policy if exists hopper_require_mfa");
+    expect(sql).toContain("drop policy if exists hopper_require_email_code");
     expect(sql).toContain("as restrictive");
-    expect(sql).toContain("for all");
-    expect(sql.match(/'aal2'/g)).toHaveLength(2);
+    expect(sql).toContain("auth.uid()");
+    expect(sql).toContain('"method":"password"');
+    expect(sql).not.toContain("'aal2'");
   });
 });

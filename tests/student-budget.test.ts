@@ -825,11 +825,9 @@ describe("Student budget", () => {
     submit("register-form");
     expect(text("register-name-error")).toBe("Completează numele.");
     expect(text("register-email-error")).toBe("Completează emailul.");
-    expect(text("register-password-error")).toBe("Completează parola.");
     expect(savedUser()).toEqual(legacyUser);
     field("register-name", "Alex");
     field("register-email", "invalid");
-    field("register-password", "test-password");
     submit("register-form");
     expect(text("register-email-error")).toBe("Introdu o adresă de email validă.");
     start();
@@ -860,7 +858,7 @@ describe("Student budget", () => {
     expect(savedUser().savingsGoal.saved).toBe(100);
     document.getElementById("logout-button")!.click();
     field("login-email", legacyUser.email);
-    field("login-password", legacyUser.password);
+    field("login-password", "test-password");
     submit("login-form");
     expect(document.querySelectorAll(".field-error:not([hidden])")).toHaveLength(0);
   });
@@ -1638,24 +1636,25 @@ describe("Student budget", () => {
     expect(text("savings-status")).toContain("nu a putut fi salvată");
   });
 
-  it("validates sign-in fields then delegates credentials without local password checks", () => {
+  it("validates the email then delegates a code request without local password checks", () => {
     start();
     document.getElementById("logout-button")!.click();
+    field("login-password", "test-password");
     submit("login-form");
-    expect(text("login-status")).toContain("Completează emailul și parola");
+    expect(text("login-status")).toContain("Completează emailul");
     field("login-email", "invalid");
-    field("login-password", "wrong");
+    field("login-password", "test-password");
     submit("login-form");
     expect(text("login-status")).toContain("email validă");
     field("login-email", "new@example.test");
-    field("login-password", " a password with spaces ");
+    field("login-password", "test-password");
     submit("login-form");
     const auth = (
       window as unknown as { HopperAuth: ReturnType<typeof installAuthenticatedSession> }
     ).HopperAuth;
     expect(auth.signIn).toHaveBeenCalledWith({
       email: "new@example.test",
-      password: " a password with spaces ",
+      password: "test-password",
     });
     expect(localStorage.getItem("expenses_current_user")).toBeNull();
     expect(savedUser()).toEqual(legacyUser);
@@ -2028,7 +2027,7 @@ describe("Student budget", () => {
     document.getElementById("header-profile-button")!.click();
     document.getElementById("logout-button")!.click();
     field("login-email", legacyUser.email);
-    field("login-password", legacyUser.password);
+    field("login-password", "test-password");
     submit("login-form");
     expect(text("user-name")).toBe("Ana");
     expect(text("active-currency-label")).toBe("Valută: RON");
@@ -2036,7 +2035,7 @@ describe("Student budget", () => {
     document.getElementById("header-profile-button")!.click();
     document.getElementById("logout-button")!.click();
     field("login-email", euroUser.email);
-    field("login-password", euroUser.password);
+    field("login-password", "test-password");
     submit("login-form");
     expect(text("user-name")).toBe("Alex");
     expect(text("active-currency-label")).toBe("Valută: EUR");
@@ -2293,7 +2292,7 @@ describe("Student budget", () => {
     document.getElementById("logout-button")!.click();
     expect(document.documentElement.dataset["theme"]).toBe("garden");
     field("login-email", other.email);
-    field("login-password", other.password);
+    field("login-password", "test-password");
     submit("login-form");
     expect(document.documentElement.dataset["theme"]).toBe("peach");
     expect(JSON.parse(localStorage.getItem("expenses_users")!)[0].theme).toBe("night");
@@ -2448,7 +2447,7 @@ describe("Student budget", () => {
     await vi.waitFor(() => expect(images).toHaveLength(1));
     document.getElementById("logout-button")!.click();
     field("login-email", other.email);
-    field("login-password", other.password);
+    field("login-password", "test-password");
     submit("login-form");
     images[0]!.onload!();
     await Promise.resolve();
@@ -2466,7 +2465,7 @@ describe("Student budget", () => {
     document.getElementById("logout-button")!.click();
     field("register-name", "Alex");
     field("register-email", "alex@example.test");
-    field("register-password", "test-password");
+    field("register-password", "new-test-password");
     submit("register-form");
     const auth = (
       window as unknown as { HopperAuth: ReturnType<typeof installAuthenticatedSession> }
@@ -2474,7 +2473,7 @@ describe("Student budget", () => {
     expect(auth.register).toHaveBeenCalledWith({
       name: "Alex",
       email: "alex@example.test",
-      password: "test-password",
+      password: "new-test-password",
     });
     expect(JSON.parse(localStorage.getItem("expenses_users")!)).toEqual([legacyUser]);
   });

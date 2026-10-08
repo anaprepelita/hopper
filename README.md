@@ -6,7 +6,7 @@ Pe telefoanele cu ecrane de până la 720 px, aplicația are o bară de navigare
 
 ## Conturi și păstrarea datelor
 
-Înregistrările locale ale conturilor și ultima sesiune deschisă folosesc în continuare cheile `expenses_users` și `expenses_current_user` din localStorage. Înainte de încărcarea scripturilor financiare este pregătită o copie locală nativă prin `@capacitor/preferences`, cu cheia `hopper_accounts_v1`. Copia se actualizează după modificarea conturilor, poate restaura înregistrările lipsă din WebView la următoarea pornire și păstrează modificările locale mai recente și deconectarea cerută de utilizator. Pozele rămân pe dispozitiv. Parolele conturilor noi sunt verificate de Supabase și nu sunt salvate în aceste înregistrări; câmpurile vechi sunt păstrate pentru compatibilitate. O copie locală a utilizatorului nu permite conectarea fără verificare 2FA.
+Înregistrările locale ale conturilor și ultima sesiune deschisă folosesc în continuare cheile `expenses_users` și `expenses_current_user` din localStorage. Înainte de încărcarea scripturilor financiare este pregătită o copie locală nativă prin `@capacitor/preferences`, cu cheia `hopper_accounts_v1`. Copia se actualizează după modificarea conturilor, poate restaura înregistrările lipsă din WebView la următoarea pornire și păstrează modificările locale mai recente și deconectarea cerută de utilizator. Pozele rămân pe dispozitiv. Conturile noi folosesc email și parolă verificate de Supabase; parolele introduse nu sunt salvate local, iar câmpurile vechi sunt păstrate pentru compatibilitate. O copie locală a utilizatorului nu permite conectarea fără o sesiune verificată de Supabase.
 
 Dacă citirea datelor eșuează, aplicația oferă reîncercarea, în loc să afișeze o listă aparent goală de conturi. Dacă actualizarea copiei native eșuează, datele locale sunt păstrate și se poate reîncerca. Dezinstalarea sau ștergerea tuturor datelor aplicației elimină ambele copii. Acest mecanism păstrează datele pe dispozitiv; sincronizarea între dispozitive necesită configurarea separată a serviciului Supabase.
 
@@ -30,17 +30,19 @@ Fiecare cont poate salva un nume afișat, universitatea, anul de studiu și valu
 
 Anul de studiu, valuta și sursa venitului folosesc dialoguri retro cu același aspect, navigare din tastatură și revenirea focalizării la selector după închidere. Alegerea valutei actualizează câmpul; **Salvează valuta** aplică și memorează preferința.
 
-## Autentificare cu doi factori și validarea formularelor
+## Autentificare și recuperarea parolei
 
 Autentificarea se deschide direct pe formularul de conectare, fără butoanele duplicate de conectare și înregistrare de deasupra. Butoanele retro pastel de sub formulare permit trecerea între înregistrare și conectare și focalizează primul câmp.
 
-Toate conturile folosesc email și parolă prin Supabase, apoi un cod din Google/Microsoft Authenticator. La înregistrare, emailul este confirmat printr-un cod introdus direct în Hopper. La prima conectare, utilizatorul configurează Authenticator prin QR sau prin copierea cheii pe același telefon. Codurile incorecte, expirate și lipsa internetului afișează mesaje în formular; anularea nu deschide contul.
+Conectarea cere emailul și parola, cu butonul „Intră în cont”. Câmpurile afișează „Introdu email” și „Introdu parola”. Înregistrarea cere și numele, o parolă de minimum opt caractere și confirmarea emailului prin cod. Mesajele pentru date greșite sau lipsa internetului apar în formular. Nu este obligatoriu Authenticator.
 
-Dashboardul se deschide numai după validarea sesiunii pe server, a nivelului `aal2` și a unui factor TOTP verificat. Sesiunile salvate sunt reverificate la pornire. Fără configurația Supabase sau resursele de autentificare, aplicația păstrează datele și rămâne blocată la conectare.
+Linkul „Ai uitat parola?” deschide recuperarea în aplicație: email → cod → parolă nouă și confirmare. După salvare apare mesajul de succes în stilul aplicației și se revine la conectarea cu noua parolă. Codurile incorecte sau expirate nu deschid contul; retrimiterea devine disponibilă după 60 de secunde.
 
-**Integrarea necesită încă proiectul Supabase și configurarea emailului înainte de folosirea pe telefon.** Pașii sunt în [ghidul 2FA](supabase/AUTH.md). Conturile locale vechi se asociază după confirmarea aceleiași adrese de email și verificarea Authenticator, păstrând înregistrările și poza. Autentificarea nu activează sincronizarea financiară.
+Dashboardul se deschide numai după validarea pe server a sesiunii și a emailului confirmat. Sesiunile valide sunt păstrate și reverificate la pornire. Recuperarea și anularea nu modifică datele financiare. Fără configurația Supabase sau resursele de autentificare, aplicația păstrează datele și rămâne blocată la conectare.
 
-Mesajele pentru câmpuri lipsă și email invalid rămân distincte. Pentru credențiale respinse de server, mesajul este „Emailul sau parola este incorectă”, fără identificarea conturilor din lista locală.
+**Confirmarea și recuperarea necesită emailuri funcționale.** Configurează SMTP și șabloanele „Confirm signup” și „Reset password”, cu codul în mesaj. Pașii și migrarea SQL curentă sunt în [ghidul de autentificare](supabase/AUTH.md). Conturile locale vechi se asociază după verificarea aceleiași adrese, păstrând datele și poza; un cont online creat fără parolă poate seta una prin recuperare. Autentificarea nu activează sincronizarea financiară.
+
+Mesajele pentru email lipsă, adresă invalidă, cod greșit sau expirat, limite de trimitere și indisponibilitatea serviciului rămân distincte. Conturile nu sunt identificate din lista locală înainte de verificare.
 
 Celelalte formulare afișează avertizări în limba aleasă lângă câmpurile obligatorii necompletate. Pentru suma unui venit sau a unei cheltuieli, mesajul în română este **Completează suma.** Salvarea focalizează primul câmp invalid și păstrează valorile introduse, fără să salveze înregistrări incomplete. Avertizările dispar după corectare; câmpurile opționale rămân opționale. Sunt verificate și formatul emailului, sumele pozitive și precizia de maximum două zecimale.
 
@@ -138,7 +140,7 @@ Un iepuraș pixelat separat, în dreapta antetului, vorbește printr-un balon de
 
 Salutul și textul introductiv original sunt păstrate. Iepurașul rămâne în interiorul antetului pe telefon și respectă mișcarea redusă și pauza din fundal. Balonul său are text puțin mai mic, spațiere mai strânsă și margini interioare reduse; mesajele complete și dimensiunea, poziția și animațiile iepurașului sunt păstrate.
 
-Cardul de autentificare este mai îngust și compact, cu aspectul pastel și pixelat al aplicației. Înregistrarea confirmă crearea contului printr-un mesaj retro verde mentă și focalizează câmpul parolei pentru conectare. Pe autentificare nu există raportarea problemelor sau buton pentru cont sincronizat. Controalele de sincronizare sunt ascunse în interfață, iar datele locale și integrarea opțională sunt păstrate.
+Cardul de autentificare este mai îngust și compact, cu aspectul pastel și pixelat al aplicației. După cererea codului, formularul afișează adresa destinatarului, câmpul codului și confirmarea în stilul pastel al aplicației. Pe autentificare nu există raportarea problemelor sau buton pentru cont sincronizat. Controalele de sincronizare sunt ascunse în interfață, iar datele locale și integrarea opțională sunt păstrate.
 
 Rândurile pentru gestionarea categoriilor rezervă o coloană compactă pentru **Șterge**, astfel încât numele să rămână lizibil pe telefon. Iepurașul Hopper nu mai afișează evidențierea la atingere, dar păstrează un contur vizibil pentru focalizarea din tastatură.
 
@@ -293,13 +295,13 @@ Valorile interne ale opțiunilor pentru sursa veniturilor rămân aceleași, chi
 
 ## Sincronizare opțională prin Supabase
 
-Controalele de sincronizare sunt ascunse la cererea utilizatorului. Integrarea și migrarea opționale existente sunt păstrate pentru compatibilitatea conturilor și datelor, iar autentificarea online cu 2FA este obligatorie. Aceasta nu activează încărcarea datelor financiare.
+Controalele de sincronizare sunt ascunse la cererea utilizatorului. Integrarea și migrarea opționale existente sunt păstrate pentru compatibilitatea conturilor și datelor, iar autentificarea online prin cod pe email este obligatorie. Aceasta nu activează încărcarea datelor financiare.
 
 Înregistrările locale existente, pozele și cheile de stocare sunt păstrate. Raportarea problemelor folosește o funcție Supabase separată și nu necesită sincronizarea financiară.
 
 ## Structura surselor și verificări
 
-- `mobile/app/`: autentificarea cu 2FA, interfața financiară, stocarea locală, traducerile, animațiile, sincronizarea și imaginile originale ale animalelor.
+- `mobile/app/`: autentificarea prin cod pe email, interfața financiară, stocarea locală, traducerile, animațiile, sincronizarea și imaginile originale ale animalelor.
 - `mobile/assets/animals/`: informații despre imaginile PNG locale păstrate.
 - `mobile/`: pornirea nativă, structura interfeței împachetate, comportamentul aplicației și stilurile pentru zonele protejate ale ecranului.
 - `android/` și `ios/`: proiectele native.

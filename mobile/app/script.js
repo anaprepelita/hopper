@@ -17,7 +17,7 @@ const achievementNotificationIcon = document.getElementById("achievement-notific
 const userNameElement = document.getElementById("user-name");
 const logoutButton = document.getElementById("logout-button");
 
-const authSwitches = document.querySelectorAll(".auth-form-switch");
+const authSwitches = document.querySelectorAll(".auth-form-switch[data-target]");
 const viewTabs = document.querySelectorAll(".view-tab");
 const pageViews = document.querySelectorAll(".page-view");
 
@@ -676,6 +676,8 @@ function setActiveTab(targetFormId) {
   clearLoginMessage();
   clearFormValidation(registerForm);
   const changed = !document.getElementById(targetFormId)?.classList.contains("active");
+  for (const id of ["email-code-form", "recovery-form", "reset-password-form"]) document.getElementById(id).classList.remove("active");
+  window.HopperAuth?.switchForm?.(targetFormId);
   loginForm.classList.toggle("active", targetFormId === "login-form");
   registerForm.classList.toggle("active", targetFormId === "register-form");
   if (changed) {
@@ -1517,18 +1519,12 @@ registerForm.addEventListener("submit", (event) => {
   const status = document.getElementById("register-status");
   const name = document.getElementById("register-name").value.trim();
   const email = document.getElementById("register-email").value.trim();
-  const password = document.getElementById("register-password").value;
   if (!window.HopperAuth) {
     status.textContent = hopperText("Conectarea securizată nu este disponibilă momentan.");
     status.hidden = false;
     return;
   }
-  if (password.length < 8) {
-    status.textContent = hopperText("Alege o parolă de cel puțin 8 caractere.");
-    status.hidden = false;
-    document.getElementById("register-password").focus();
-    return;
-  }
+  const password = document.getElementById("register-password").value;
   void window.HopperAuth.register({ name, email, password });
 });
 
@@ -1554,10 +1550,9 @@ loginForm.addEventListener("submit", (event) => {
   clearLoginMessage();
 
   const email = document.getElementById("login-email").value.trim();
-  const password = document.getElementById("login-password").value;
 
-  if (!email || !password) {
-    showLoginError(hopperText("Completează emailul și parola pentru a te conecta."), [!email ? "login-email" : "login-password"]);
+  if (!email) {
+    showLoginError(hopperText("Completează emailul pentru a te conecta."), ["login-email"]);
     return;
   }
   if (!document.getElementById("login-email").validity.valid) {
@@ -1566,6 +1561,11 @@ loginForm.addEventListener("submit", (event) => {
   }
   if (!window.HopperAuth) {
     showLoginError(hopperText("Conectarea securizată nu este disponibilă momentan."), ["login-email"]);
+    return;
+  }
+  const password = document.getElementById("login-password").value;
+  if (!password) {
+    showLoginError(hopperText("Completează parola."), ["login-password"]);
     return;
   }
   void window.HopperAuth.signIn({ email, password });
@@ -1901,7 +1901,7 @@ window.HopperApp = {
   openUser: showApp,
   lock() { showScreen("auth"); },
   async acceptAuthenticated(user) {
-    if (!window.HopperAuth?.canAccept(user)) throw Error("mfa-required");
+    if (!window.HopperAuth?.canAccept(user)) throw Error("auth-required");
     const previousUsers = localStorage.getItem(USERS_KEY);
     const previousCurrent = localStorage.getItem(CURRENT_USER_KEY);
     const users = getUsers();
@@ -1919,7 +1919,7 @@ window.HopperApp = {
     }
   },
   applyCloud(user) {
-    if (!window.HopperAuth?.canOpen(user)) throw Error("mfa-required");
+    if (!window.HopperAuth?.canOpen(user)) throw Error("auth-required");
     const users = getUsers();
     const index = users.findIndex(item => item.email.toLowerCase() === user.email.toLowerCase());
     const previous = localStorage.getItem(USERS_KEY);

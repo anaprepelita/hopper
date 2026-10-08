@@ -412,7 +412,7 @@ describe("Local and online synchronization", () => {
     expect(() => api().validateSnapshot({ hiddenCategories: { unexpected: true } })).toThrow();
     expect(() => api().validateSnapshot({ expenses: [{ id: "x", amount: "bad" }] })).toThrow();
   });
-  it("delegates the old hidden login to mandatory MFA without linking or uploading financial data", async () => {
+  it("delegates the old hidden login to email-code authentication without linking or uploading financial data", async () => {
     const cloud = fakeCloud();
     boot(user, true, cloud.sdk);
     set("cloud-email", user.email);

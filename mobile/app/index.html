@@ -29,70 +29,86 @@
         <p class="auth-student-title"><img class="hopper-brand-icon" src="animals/bunny.png" alt="" width="40" height="40" />Hopper</p>
         <p class="student-note"><span data-i18n="Mai multă claritate pentru banii tăi din facultate.">Mai multă claritate pentru banii tăi din facultate.</span></p>
 
+        <p id="auth-service-status" class="form-feedback auth-service-status" role="alert" aria-atomic="true" hidden data-i18n="Conectarea securizată nu este disponibilă momentan.">Conectarea securizată nu este disponibilă momentan.</p>
+
         <form id="login-form" class="auth-form active" novalidate>
           <h2><span data-i18n="Bine ai revenit!">Bine ai revenit!</span></h2>
-
           <div class="field-group">
             <label for="login-email"><span data-i18n="Email">Email</span></label>
-            <input id="login-email" type="email" placeholder="alex@email.com" aria-describedby="login-status" autocomplete="username" required />
+            <input id="login-email" type="email" placeholder="Introdu email" data-i18n-placeholder="Introdu email" aria-describedby="login-status" autocomplete="username" required />
           </div>
-
           <div class="field-group">
-            <label for="login-password"><span data-i18n="Parolă">Parolă</span></label>
-            <input id="login-password" type="password" placeholder="Introdu parola" aria-describedby="login-status" autocomplete="current-password" required  data-i18n-placeholder="Introdu parola"/>
+            <label for="login-password" data-i18n="Parolă">Parolă</label>
+            <input id="login-password" type="password" placeholder="Introdu parola" data-i18n-placeholder="Introdu parola" aria-describedby="login-status" autocomplete="current-password" required />
           </div>
-
+          <button id="forgot-password" type="button" class="auth-recovery-link" data-i18n="Ai uitat parola?">Ai uitat parola?</button>
           <button type="submit" class="primary-button"><span data-i18n="Intră în cont">Intră în cont</span></button>
           <p id="login-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
           <button type="button" class="auth-form-switch" data-target="register-form" aria-controls="register-form" data-i18n="Înregistrează-te">Înregistrează-te</button>
         </form>
 
-        <form id="register-form" class="auth-form">
+        <form id="register-form" class="auth-form" novalidate>
           <h2><span data-i18n="Începe bugetul tău">Începe bugetul tău</span></h2>
-<p class="student-note auth-migration-note" data-i18n="Ai un cont local mai vechi? Înregistrează același email și confirmă-l pentru a păstra datele de pe acest dispozitiv.">Ai un cont local mai vechi? Înregistrează același email și confirmă-l pentru a păstra datele de pe acest dispozitiv.</p>
-
+          <p class="student-note auth-migration-note" data-i18n="Folosește același email pentru a păstra datele acestui dispozitiv.">Folosește același email pentru a păstra datele acestui dispozitiv.</p>
           <div class="field-group">
             <label for="register-name"><span data-i18n="Nume">Nume</span></label>
-            <input id="register-name" type="text" placeholder="Alex" required />
+            <input id="register-name" type="text" placeholder="Introdu numele" data-i18n-placeholder="Introdu numele" autocomplete="name" required />
           </div>
-
           <div class="field-group">
             <label for="register-email"><span data-i18n="Email">Email</span></label>
-            <input id="register-email" type="email" placeholder="alex@email.com" required />
+            <input id="register-email" type="email" placeholder="Introdu email" data-i18n-placeholder="Introdu email" autocomplete="username" required />
           </div>
-
           <div class="field-group">
-            <label for="register-password"><span data-i18n="Parolă">Parolă</span></label>
-            <input id="register-password" type="password" minlength="8" autocomplete="new-password" placeholder="Alege o parolă" required  data-i18n-placeholder="Alege o parolă"/>
+            <label for="register-password" data-i18n="Parolă">Parolă</label>
+            <input id="register-password" type="password" placeholder="Introdu parola" data-i18n-placeholder="Introdu parola" autocomplete="new-password" minlength="8" aria-describedby="register-password-hint register-status" required />
+            <small id="register-password-hint" data-i18n="Minimum 8 caractere.">Minimum 8 caractere.</small>
           </div>
-
           <p id="register-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
-          <button type="submit" class="primary-button"><span data-i18n="Creează cont">Creează cont</span></button>
+          <button type="submit" class="primary-button"><span data-i18n="Înregistrează-te">Înregistrează-te</span></button>
           <button type="button" class="auth-form-switch" data-target="login-form" aria-controls="login-form" data-i18n="Înapoi la conectare">Înapoi la conectare</button>
         </form>
-        <form id="mfa-form" class="auth-form" novalidate>
-          <div class="mfa-badge" aria-hidden="true">✦</div>
-          <h2 id="mfa-heading" data-i18n="Confirmă conectarea">Confirmă conectarea</h2>
-          <p id="mfa-intro" class="student-note" data-i18n="Introdu codul din Google sau Microsoft Authenticator.">Introdu codul din Google sau Microsoft Authenticator.</p>
-          <div id="mfa-setup" hidden>
-            <img id="mfa-qr" class="mfa-qr" width="192" height="192" alt="Cod QR pentru Authenticator" data-i18n-alt="Cod QR pentru Authenticator" />
-            <details id="mfa-manual">
-              <summary data-i18n="Configurează pe același telefon">Configurează pe același telefon</summary>
-              <p class="student-note" data-i18n="Copiază cheia și adaug-o manual în Authenticator.">Copiază cheia și adaug-o manual în Authenticator.</p>
-              <label for="mfa-secret" data-i18n="Cheie de configurare">Cheie de configurare</label>
-              <input id="mfa-secret" type="text" readonly autocomplete="off" spellcheck="false" />
-              <button id="mfa-copy" class="secondary-button" type="button" data-i18n="Copiază cheia">Copiază cheia</button>
-            </details>
+
+        <form id="recovery-form" class="auth-form" novalidate>
+          <h2 data-i18n="Ai uitat parola?">Ai uitat parola?</h2>
+          <p class="student-note" data-i18n="Introdu emailul contului pentru a primi un cod de resetare.">Introdu emailul contului pentru a primi un cod de resetare.</p>
+          <div class="field-group">
+            <label for="recovery-email" data-i18n="Email">Email</label>
+            <input id="recovery-email" type="email" placeholder="Introdu email" data-i18n-placeholder="Introdu email" autocomplete="email" aria-describedby="recovery-status" required />
+          </div>
+          <p id="recovery-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
+          <button type="submit" class="primary-button" data-i18n="Trimite codul">Trimite codul</button>
+          <button id="recovery-cancel" type="button" class="auth-form-switch" data-i18n="Înapoi la conectare">Înapoi la conectare</button>
+        </form>
+
+        <form id="email-code-form" class="auth-form" novalidate>
+          <div class="email-code-badge" aria-hidden="true">✦</div>
+          <h2 data-i18n="Verifică emailul">Verifică emailul</h2>
+          <p class="student-note" data-i18n="Introdu codul de confirmare sau resetare primit pe email.">Introdu codul de confirmare sau resetare primit pe email.</p>
+          <p id="email-code-address" class="email-code-address"></p>
+          <div class="field-group">
+            <label for="email-code" data-i18n="Codul primit pe email">Codul primit pe email</label>
+            <input id="email-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-describedby="email-code-status" placeholder="000000" />
+          </div>
+          <p id="email-code-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
+          <button type="submit" class="primary-button" data-i18n="Verifică și continuă">Verifică și continuă</button>
+          <button id="email-code-resend" type="button" class="secondary-button">Retrimite codul</button>
+          <button id="email-code-cancel" type="button" class="secondary-button" data-i18n="Înapoi la conectare">Înapoi la conectare</button>
+        </form>
+
+        <form id="reset-password-form" class="auth-form" novalidate>
+          <h2 data-i18n="Alege o parolă nouă">Alege o parolă nouă</h2>
+          <div class="field-group">
+            <label for="reset-password" data-i18n="Parolă nouă">Parolă nouă</label>
+            <input id="reset-password" type="password" placeholder="Introdu parola" data-i18n-placeholder="Introdu parola" autocomplete="new-password" minlength="8" aria-describedby="reset-password-hint reset-password-status" required />
+            <small id="reset-password-hint" data-i18n="Minimum 8 caractere.">Minimum 8 caractere.</small>
           </div>
           <div class="field-group">
-            <label id="mfa-code-label" for="mfa-code" data-i18n="Cod de autentificare">Cod de autentificare</label>
-            <input id="mfa-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-describedby="mfa-status" placeholder="000000" />
+            <label for="reset-password-confirm" data-i18n="Confirmă parola">Confirmă parola</label>
+            <input id="reset-password-confirm" type="password" placeholder="Introdu parola" data-i18n-placeholder="Introdu parola" autocomplete="new-password" minlength="8" aria-describedby="reset-password-status" required />
           </div>
-          <p id="mfa-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
-          <button type="submit" class="primary-button" data-i18n="Verifică și continuă">Verifică și continuă</button>
-          <button id="mfa-resend" type="button" class="secondary-button" hidden data-i18n="Retrimite codul">Retrimite codul</button>
-          <button id="mfa-cancel" type="button" class="secondary-button" data-i18n="Înapoi la conectare">Înapoi la conectare</button>
-          <p class="student-note mfa-recovery-note" data-i18n="Ai pierdut accesul la Authenticator? Recuperarea contului necesită verificarea identității prin suport.">Ai pierdut accesul la Authenticator? Recuperarea contului necesită verificarea identității prin suport.</p>
+          <p id="reset-password-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
+          <button type="submit" class="primary-button" data-i18n="Salvează parola">Salvează parola</button>
+          <button id="reset-password-cancel" type="button" class="secondary-button" data-i18n="Înapoi la conectare">Înapoi la conectare</button>
         </form>
       </div>
     </div>

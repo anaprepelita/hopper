@@ -4,7 +4,26 @@ Aici sunt consemnate schimbările zilnice ale proiectului, după data din Român
 
 ## 2026-10-08
 
-### Autentificare cu doi factori
+### Revenire la email și parolă
+
+- Readuse câmpurile de email și parolă, butonul „Intră în cont” și linkul „Ai uitat parola?”, la cererea utilizatorului.
+- Înlocuite exemplele din câmpuri cu „Introdu email” și „Introdu parola”, cu traduceri în limbile aplicației.
+- Adăugată recuperarea în aplicație prin cod pe email, confirmarea parolei noi și revenirea la conectare după salvare.
+- Păstrate datele locale și verificarea identității pe server; parolele noi nu se salvează în înregistrările financiare.
+- Pregătită migrarea SQL pentru conectarea cu parolă și actualizat ghidul de configurare. SMTP și verificarea emailurilor reale rămân de făcut.
+- Trec 279 de teste, verificarea TypeScript și lint; formularul cu parolă și recuperare este servit în modul live. Nu a fost compilat sau instalat un APK nou.
+
+### Conectare simplificată prin email (înlocuită ulterior)
+
+- Înlocuită cerința Authenticator cu email și cod de șase cifre, la cererea utilizatorului.
+- Eliminate câmpurile de parolă, QR-ul și cheia de configurare din autentificare.
+- Păstrate conturile, datele financiare și sesiunile verificate; o sesiune veche cu parolă cere un cod nou.
+- Adăugate retrimiterea cu pauză de 60 de secunde și mesaje pentru cod greșit, expirat, cerere anulată sau serviciu indisponibil.
+- Pregătită migrarea SQL care înlocuiește cerința MFA cu verificarea metodei de conectare prin email și păstrează accesul numai la datele proprii.
+- Verificată configurația publică a proiectului Supabase și actualizate resursele live, fără crearea de conturi sau trimiterea automată de emailuri.
+- Actualizate testele, traducerile și ghidul. SMTP, șabloanele de email și verificarea fluxului real rămân de configurat.
+
+### Pregătirea inițială 2FA (înlocuită ulterior)
 
 - Pregătită autentificarea Supabase cu Google/Microsoft Authenticator, obligatorie pentru toate conturile.
 - Adăugate confirmarea emailului prin cod în aplicație, retrimiterea codului și configurarea TOTP prin QR sau cheie.
@@ -16,6 +35,8 @@ Aici sunt consemnate schimbările zilnice ale proiectului, după data din Român
 - Adăugate teste pentru înregistrare, verificare, anulare, persistență și compatibilitatea conturilor.
 - Documentată configurarea Supabase. Activarea pe un proiect real, livrarea emailurilor și verificarea pe telefon rămân de făcut.
 - Clarificat că operațiunile Git sunt executate manual de utilizator.
+- Corectate butoanele de conectare și înregistrare când configurarea lipsește: răspund cu un mesaj, iar avertizarea rămâne vizibilă la completare și schimbarea formularului.
+- Explicat în formularul de conectare că urmează codul din Authenticator.
 
 ## 2026-10-07
 

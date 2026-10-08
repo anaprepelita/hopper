@@ -1,101 +1,123 @@
-# Configurarea autentificării Hopper cu doi factori
+# Autentificarea Hopper cu email și parolă
 
-Codul este pregătit pentru Supabase Auth și Google/Microsoft Authenticator. Configurarea unui proiect real și testarea pe telefon sunt necesare înainte de distribuirea acestei versiuni. Fără configurare, aplicația păstrează datele existente și afișează că autentificarea securizată nu este disponibilă; nu folosește parola locală ca alternativă.
+Utilizatorul intră în cont cu emailul și parola. Înregistrarea cere și numele, iar confirmarea emailului folosește un cod introdus direct în aplicație. Linkul „Ai uitat parola?” permite resetarea prin email, cod și alegerea unei parole noi.
 
-## 1. Creează proiectul
+Aceasta este autentificare cu un singur factor. Authenticator nu mai este obligatoriu.
 
-1. Deschide [Supabase Dashboard](https://supabase.com/dashboard) și conectează-te.
-2. Apasă **New project**, alege organizația și numele **Hopper**.
-3. Alege o parolă pentru baza de date și păstreaz-o într-un manager de parole. Nu o introduce în aplicație sau în Git.
-4. Alege o regiune apropiată de utilizatori și așteaptă crearea proiectului.
+## 1. Configurația locală
 
-Dacă ai deja un proiect Hopper, folosește-l pentru a păstra identitățile conturilor existente.
-
-## 2. Configurează emailul de confirmare
-
-În **Authentication**, păstrează activată autentificarea prin email și confirmarea emailului. Confirmarea adresei este primul pas al înregistrării; factorul suplimentar rămâne codul din Authenticator.
-
-În **Email Templates → Confirm signup**, folosește un mesaj cu cod de șase cifre. Un exemplu minimal:
-
-```html
-<h2>Confirmă contul Hopper</h2>
-<p>Introdu acest cod în aplicația Hopper:</p>
-<p><strong>{{ .Token }}</strong></p>
-<p>Dacă nu ai cerut acest cod, ignoră mesajul.</p>
-```
-
-Aplicația verifică acest cod prin `auth.verifyOtp` și continuă cu configurarea Authenticator. În acest flux nu este necesară o pagină web de confirmare sau o redirecționare către localhost.
-
-Serviciul de email implicit Supabase trimite numai către adresele membrilor echipei și are limite mici. Pentru utilizatori reali, configurează **Custom SMTP** în Supabase, cu un expeditor verificat. Datele SMTP rămân în Supabase. Consultă [configurarea oficială SMTP](https://supabase.com/docs/guides/auth/auth-smtp) și [șabloanele de email](https://supabase.com/docs/guides/auth/auth-email-templates).
-
-## 3. Păstrează TOTP activ
-
-TOTP este activ implicit în proiectele Supabase. Păstrează posibilitatea de înrolare și verificare a factorilor TOTP. Aplicația cere tuturor conturilor un factor TOTP verificat și o sesiune la nivelul `aal2` înainte de deschiderea bugetului. Nu există opțiune de dezactivare a 2FA în Hopper.
-
-Supabase verifică și limitează încercările de autentificare. Codurile și cheia de configurare nu sunt scrise în datele financiare sau în jurnal.
-
-## 4. Completează configurația locală
-
-În setările API ale proiectului Supabase găsești **Project URL** și cheia **publishable**. În VS Code, copiază `.env.example` într-un fișier `.env.local` și completează valorile publice:
+În fișierul `.env.local`, lângă `package.json`, completează:
 
 ```dotenv
 VITE_SUPABASE_URL=https://ID_PROIECT.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_INLOCUIESTE
 ```
 
-Fișierul `.env.local` este ignorat de Git. Nu pune aici parola bazei de date, o cheie `sb_secret_`, cheia `service_role`, date SMTP sau coduri Authenticator. Scriptul de construire include numai configurația publică și refuză cheile de server.
+Fișierul este ignorat de Git. Nu introduce parole, chei `sb_secret_`, `service_role`, date SMTP sau coduri de conectare în aplicație ori în chat.
 
-## 5. Aplică protecția datelor online
+`npm.cmd run sync:cloud` generează configurația publică. La pornirea modului live și la build rulează automat. Dacă modifici numai `.env.local` în timpul unei sesiuni live, regenerează configurația și reconstruiește resursele live.
 
-În **SQL Editor → New query**, rulează în ordine conținutul fișierelor:
+## 2. Activează conectarea prin email și parolă
 
-1. [Schema existentă pentru sincronizare](migrations/202610040001_hopper_sync.sql).
-2. [Politica obligatorie MFA](migrations/202610080001_hopper_mfa.sql).
+În Supabase, **Authentication → Sign In / Providers → Email**, păstrează activată conectarea prin email și confirmarea adresei. Configurează minimum opt caractere pentru parole; serverul poate impune reguli suplimentare. Codurile de email trebuie să aibă șase cifre, conform formularului.
 
-A doua migrare adaugă o politică RLS restrictivă care cere `aal2` pentru citire, inserare și actualizare. Se aplică și funcției existente de salvare, care rulează cu permisiunile utilizatorului. Politicile de proprietar rămân active.
+Conectarea folosește `signInWithPassword`, înregistrarea `signUp`, iar parola este gestionată de Supabase. Nu se verifică parola din vechile înregistrări locale.
 
-Aceste migrări pregătesc tabelul pentru conturile deja legate la sincronizare. Simpla activare a autentificării 2FA nu leagă conturile locale la sincronizarea financiară și nu le încarcă înregistrările sau pozele.
+Dacă Supabase respinge conectarea fără să distingă între un cont inexistent și o parolă greșită, Hopper afișează „Emailul sau parola sunt incorecte. Verifică-le sau creează un cont.” Aplicația nu deduce existența unui cont online din lista locală.
 
-## 6. Verifică și reconstruiește aplicația
+[Ghid Supabase pentru parole](https://supabase.com/docs/guides/auth/passwords), [conectare cu parolă](https://supabase.com/docs/reference/javascript/auth-signinwithpassword).
 
-Din terminalul proiectului:
+## 3. Configurează trimiterea emailurilor
 
-```powershell
-npm.cmd test
-npm.cmd run typecheck
-npm.cmd run lint
-npm.cmd run build
-npm.cmd run mobile:sync:android
+În **Authentication → Emails → SMTP Settings**, configurează serviciul de trimitere. Datele private SMTP se introduc numai în Supabase.
+
+Serviciul implicit are limite mici și trimite numai către adresele membrilor echipei proiectului. Dacă Dashboardul afișează „Set up custom SMTP to edit templates”, configurează SMTP înainte de editarea șabloanelor. Conectarea unui cont deja confirmat nu cere un email la fiecare intrare; confirmarea și recuperarea parolei au nevoie de livrarea emailurilor.
+
+[SMTP Supabase](https://supabase.com/docs/guides/auth/auth-smtp).
+
+### Variantă pentru teste: Gmail dedicat
+
+Folosește o adresă separată pentru Hopper: destinatarii văd adresa expeditorului. Gmail poate servi testelor inițiale; înainte de publicare, verifică limitele și alege un serviciu potrivit numărului de utilizatori.
+
+1. Creează contul Gmail dedicat aplicației.
+2. Activează **Verificarea în doi pași** în acel cont Google. Cerința privește numai contul expeditorului; utilizatorii Hopper nu au nevoie de Authenticator.
+3. Deschide [Parole pentru aplicații](https://myaccount.google.com/apppasswords) și generează una pentru Hopper.
+4. Completează setările SMTP în Supabase:
+
+| Câmp | Valoare |
+| --- | --- |
+| Sender email | Adresa Gmail dedicată |
+| Sender name | Hopper |
+| Host | `smtp.gmail.com` |
+| Port | `587` (TLS/STARTTLS) |
+| Username | Adresa Gmail completă |
+| Password | Parola pentru aplicație generată la pasul 3 |
+
+Nu folosi parola obișnuită Gmail. Parola pentru aplicație rămâne numai în Supabase; nu o pune în chat, Git sau `.env.local`.
+
+[Ghid Google pentru parolele aplicațiilor](https://support.google.com/accounts/answer/185833?hl=ro), [setările SMTP Gmail](https://support.google.com/mail/answer/7104828?hl=en).
+
+## 4. Șabloanele de confirmare și resetare
+
+În **Authentication → Emails**, editează **Confirm signup** și **Reset password**. Ambele trebuie să includă `{{ .Token }}`, ca utilizatorul să poată introduce codul în aplicație. Un mesaj care conține numai un link nu este suficient pentru acest flux.
+
+Pentru **Confirm signup**:
+
+```html
+<h2>Confirmă emailul pentru Hopper</h2>
+<p>Introdu acest cod în aplicație:</p>
+<p><strong>{{ .Token }}</strong></p>
+<p>Dacă nu ai cerut înregistrarea, ignoră mesajul.</p>
 ```
 
-Recompilează și actualizează aplicația Android prin metoda de dezvoltare existentă. Păstrează același identificator, aceeași origine de stocare și aceeași semnătură; nu dezinstala aplicația și nu șterge datele. Pentru iOS, sincronizarea și compilarea se fac pe Mac.
+Pentru **Reset password**:
 
-Testează pe un cont de probă:
+```html
+<h2>Resetează parola Hopper</h2>
+<p>Introdu acest cod în aplicație, apoi alege parola nouă:</p>
+<p><strong>{{ .Token }}</strong></p>
+<p>Dacă nu ai cerut resetarea, ignoră mesajul.</p>
+```
 
-- Înregistrarea, primirea emailului, codul greșit, expirarea și retrimiterea codului.
-- Configurarea TOTP prin QR pe alt ecran sau prin copierea cheii pe același telefon.
-- Codul Authenticator greșit, apoi unul corect.
-- Anularea în timpul verificării și revenirea cu butonul Android.
-- Deconectarea, reconectarea și redeschiderea aplicației.
-- Lipsa internetului înainte de conectare: bugetul rămâne blocat, iar datele sunt păstrate.
-- Păstrarea sumelor, valutelor, pozei și metadatelor unui cont local vechi.
+Hopper trimite cererea prin `resetPasswordForEmail`, verifică dovada prin `verifyOtp` cu tipul `recovery`, apoi schimbă parola prin `updateUser`. Nu este necesară o pagină web sau redirecționarea către localhost. Codurile expirate sunt respinse de server; retrimiterea are o pauză locală de 60 de secunde, suplimentară limitelor Supabase.
 
-Testele automate folosesc un serviciu Supabase simulat. Ele nu confirmă livrarea reală a emailului, politicile aplicate pe server sau comportamentul Android/iOS pe dispozitive.
+După schimbare, sesiunea de recuperare este închisă local și se afișează conectarea cu noua parolă. Accesul la buget rămâne blocat pe parcursul recuperării. Resetarea nu modifică înregistrările financiare și nu salvează parola în contul local.
 
-## Conturile locale existente
+[Șabloane email](https://supabase.com/docs/guides/auth/auth-email-templates), [resetare](https://supabase.com/docs/reference/javascript/auth-resetpasswordforemail), [verificare cod](https://supabase.com/docs/reference/javascript/auth-verifyotp), [actualizare parolă](https://supabase.com/docs/reference/javascript/auth-updateuser).
 
-La prima utilizare a versiunii cu 2FA, înregistrează și confirmă aceeași adresă de email în Supabase, apoi configurează Authenticator. Dacă identitatea Supabase există deja, conectează-te la ea.
+## 5. Regulile pentru datele online
 
-După verificarea emailului și a TOTP, Hopper asociază identitatea cu înregistrările locale care au același email. Păstrează cheile `expenses_users`, `expenses_current_user`, copia nativă, sumele, valutele, poza și câmpurile vechi. Identitatea folosește câmpurile separate `authAccountId` și `authProject`; un cont legat deja la altă identitate nu este înlocuit.
+În **SQL Editor → New query**, rulează în ordine:
 
-Parolele conturilor noi sunt verificate de Supabase și nu sunt salvate în înregistrările locale Hopper. Câmpurile vechi de parolă rămân pentru compatibilitatea datelor, dar nu pot fi folosite pentru a ocoli autentificarea online.
+1. [Schema sincronizării](migrations/202610040001_hopper_sync.sql).
+2. [Migrarea pentru autentificarea cu parolă](migrations/202610080003_hopper_password_auth.sql).
 
-Conectarea și verificarea sesiunii la pornire necesită internet. După deschiderea unei sesiuni verificate, operațiunile financiare rămân locale. 2FA protejează autentificarea; nu criptează copiile locale de date.
+Noua migrare înlocuiește politicile istorice care cereau MFA sau numai cod pe email. Accesul rămâne limitat la proprietarul rândului, cu identitate autentificată și email. Sunt acceptate parolele și sesiunile verificate prin email, inclusiv cele existente. Politicile de proprietar și permisiunile explicite rămân active.
 
-## Recuperarea accesului
+Migrările intermediare sunt păstrate pentru istoricul proiectului. Pe un proiect nou, pașii de mai sus sunt suficienți. Dacă rulezi toate migrările în ordine, ultima stabilește regula curentă.
 
-Această versiune nu oferă coduri de recuperare sau resetarea automată a factorului TOTP. Înainte de lansare, stabilește un canal de suport și o procedură de verificare a identității pentru pierderea telefonului sau a aplicației Authenticator.
+Autentificarea nu activează sincronizarea financiară și nu încarcă poze, parole vechi sau alte câmpuri private. Migrarea nu a fost executată automat în proiectul real.
 
-Recuperarea administrativă trebuie făcută numai după verificarea identității, folosind instrumentele serverului Supabase. Un reset de parolă nu trebuie să dezactiveze 2FA. După eliminarea administrativă a unui factor pierdut, Hopper cere configurarea unui factor nou înainte de a deschide bugetul. Nu distribui cheile administrative în aplicație.
+## 6. Verificarea pe telefon
 
-Documentație: [TOTP](https://supabase.com/docs/guides/auth/auth-mfa/totp), [impunerea MFA pe server](https://supabase.com/docs/guides/auth/auth-mfa), [verificarea codului de email](https://supabase.com/docs/reference/javascript/auth-verifyotp).
+1. În modul live, salvează fișierele din `mobile/` și așteaptă reconstruirea.
+2. Pentru resurse împachetate, oprește sesiunea live și rulează `npm.cmd run build`, apoi `npm.cmd run mobile:sync:android`. Actualizează aplicația fără dezinstalare. iOS necesită Mac și Xcode.
+3. Înregistrare: introdu numele, emailul și o parolă de minimum opt caractere; confirmă emailul prin cod.
+4. Conectare: introdu emailul și parola. Verifică mesajele pentru câmpuri goale și date greșite.
+5. Recuperare: apasă „Ai uitat parola?”, corectează emailul dacă este necesar, verifică inboxul și Spam, introdu codul și alege o parolă nouă.
+6. Verifică un cod greșit, unul expirat, retrimiterea, anularea și revenirea cu butonul Android Înapoi.
+7. Intră cu parola nouă și confirmă păstrarea veniturilor, cheltuielilor, economiilor, valutei și pozei.
+
+Testele automate simulează serviciul. Nu demonstrează livrarea reală a emailurilor, resetarea unui cont real sau aplicarea SQL în Supabase.
+
+## Conturi existente și sesiuni
+
+Contul local este asociat numai după validarea pe server a aceleiași adrese de email. Un cont legat de altă identitate sau alt proiect nu este suprascris. Datele financiare, valuta, poza și câmpurile vechi sunt păstrate; parolele noi nu se stochează în datele locale.
+
+Un cont creat anterior fără parolă poate folosi „Ai uitat parola?” pentru a seta una, după verificarea emailului. Un cont exclusiv local trebuie mai întâi înregistrat online cu aceeași adresă. Nu există resetare locală care să ocolească Supabase.
+
+Sesiunea validă este păstrată și reverificată pe server la pornire. Deconectarea explicită este respectată. O cerere care se termină după anulare nu deschide bugetul.
+
+Conectarea și reverificarea la pornire necesită internet. După validare, operațiunile financiare locale pot funcționa fără internet. Autentificarea nu criptează automat datele locale.
+
+Cheile `expenses_users`, `expenses_current_user`, copia nativă `hopper_accounts_v1` și originea aplicației rămân neschimbate.

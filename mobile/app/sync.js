@@ -312,7 +312,7 @@
     localStorage.setItem(stateKey(auth), JSON.stringify(state));
   }
   function ensureClient() {
-    if (!window.HopperAuth) throw Error("mfa-required");
+    if (!window.HopperAuth) throw Error("auth-required");
     if (!configured) throw Error("not-configured");
     if (!client) {
       client = window.HopperAuth.getClient();
@@ -447,8 +447,8 @@
       return;
     }
     const email = document.getElementById("cloud-email").value.trim();
-    const password = document.getElementById("cloud-password").value;
     const name = document.getElementById("cloud-name").value.trim();
+    const password = document.getElementById("cloud-password").value;
     try {
       if (register) await window.HopperAuth.register({ name, email, password });
       else await window.HopperAuth.signIn({ email, password });

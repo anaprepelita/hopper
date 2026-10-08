@@ -76,4 +76,4 @@ Atașamentele sunt maximum trei, maximum 20 MB în total: poze JPG/PNG/WebP de m
 
 Documentație: [Supabase și email](https://supabase.com/docs/guides/functions/examples/send-emails), [Storage privat](https://supabase.com/docs/guides/storage/security/access-control), [Resend: trimitere](https://resend.com/docs/api-reference/emails/send-email), [Idempotency](https://resend.com/docs/dashboard/emails/idempotency-keys).
 
-Autentificarea obligatorie cu doi factori are un [ghid separat de configurare](AUTH.md).
+Autentificarea cu email și parolă și recuperarea prin cod pe email are un [ghid separat de configurare](AUTH.md).

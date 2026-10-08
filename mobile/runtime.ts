@@ -19,10 +19,15 @@ export function handleNativeBack(document: Document): boolean {
     return true;
   }
   if (
-    document.querySelector("#mfa-form.active") &&
+    document.querySelector(
+      "#email-code-form.active, #recovery-form.active, #reset-password-form.active",
+    ) &&
     !document.querySelector("#auth-screen.hidden")
   ) {
-    document.getElementById("mfa-cancel")?.click();
+    const cancel = document.querySelector<HTMLButtonElement>(
+      ".auth-form.active #email-code-cancel, .auth-form.active #recovery-cancel, .auth-form.active #reset-password-cancel",
+    );
+    cancel?.click();
     return true;
   }
   const registration = document.querySelector("#register-form.active");

@@ -1,22 +1,54 @@
 (() => {
   "use strict";
   const config = window.HopperCloudConfig || {};
-  const t = (key) => window.HopperI18n?.t(key) || key;
+  const t = (key, values = []) =>
+    window.HopperI18n?.t(key, values) || key.replace(/\{(\d+)\}/g, (_, i) => values[i] ?? "");
   const byId = (id) => document.getElementById(id);
+  const configured = Boolean(config.url && config.publishableKey && window.supabase?.createClient);
   let client = null,
     authorized = null,
-    pendingFactor = null,
-    enrollFactor = null;
+    candidate = null;
   let expectedEmail = null,
     pendingUserId = null,
-    candidate = null;
+    request = null;
   let busy = false,
     generation = 0,
-    phase = "login",
-    feedbackKey = "",
-    feedbackTarget = "login-status";
-  const configured = Boolean(config.url && config.publishableKey && window.supabase?.createClient);
+    phase = "login";
+  let feedbackKey = "",
+    feedbackTarget = "login-status",
+    resendAt = 0,
+    timer = null;
+  const emailMethods = ["password", "otp", "email/signup"];
+  const formIds = [
+    "login-form",
+    "register-form",
+    "recovery-form",
+    "email-code-form",
+    "reset-password-form",
+  ];
+  let recoveryIdentity = null,
+    signingOut = false;
 
+  function claims(session) {
+    try {
+      const payload = session.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+      return JSON.parse(
+        new TextDecoder().decode(Uint8Array.from(atob(payload), (c) => c.charCodeAt(0))),
+      );
+    } catch {
+      return null;
+    }
+  }
+  function hasVerifiedMethod(session) {
+    const value = claims(session);
+    return Boolean(
+      value?.role === "authenticated" &&
+      value.email &&
+      value.is_anonymous === false &&
+      Array.isArray(value.amr) &&
+      value.amr.some((entry) => emailMethods.includes(entry.method)),
+    );
+  }
   function matches(identity, user) {
     return Boolean(
       identity &&
@@ -34,16 +66,54 @@
     byId("app-screen").classList.add("hidden");
     byId("auth-screen").classList.remove("hidden");
   }
+  function clearCode() {
+    byId("email-code").value = "";
+    byId("email-code").removeAttribute("aria-invalid");
+  }
+  function clearPasswords() {
+    for (const id of [
+      "login-password",
+      "register-password",
+      "reset-password",
+      "reset-password-confirm",
+    ])
+      byId(id).value = "";
+  }
+  async function signOutLocal() {
+    signingOut = true;
+    try {
+      await client.auth.signOut({ scope: "local" });
+    } finally {
+      signingOut = false;
+    }
+  }
+  function stopTimer() {
+    clearInterval(timer);
+    timer = null;
+  }
   function controls() {
+    byId("auth-service-status").hidden = configured;
     document
-      .querySelectorAll(
-        "#login-form button[type=submit], #register-form button[type=submit], #mfa-form button[type=submit], #mfa-resend",
-      )
+      .querySelectorAll(formIds.map((id) => "#" + id + " button[type=submit]").join(","))
       .forEach((button) => {
-        button.disabled = busy || !configured;
+        button.disabled =
+          busy ||
+          (!configured &&
+            ["email-code-form", "reset-password-form"].includes(button.closest("form")?.id));
       });
-    for (const id of ["login-form", "register-form", "mfa-form"])
-      byId(id).setAttribute("aria-busy", String(busy));
+    for (const id of formIds) byId(id).setAttribute("aria-busy", String(busy));
+    const seconds = Math.max(0, Math.ceil((resendAt - Date.now()) / 1000));
+    byId("email-code-resend").disabled = busy || !configured || seconds > 0;
+    byId("email-code-resend").textContent =
+      seconds > 0 ? t("Retrimite codul în {0}s", [seconds]) : t("Retrimite codul");
+  }
+  function startCooldown() {
+    resendAt = Date.now() + 60000;
+    stopTimer();
+    timer = setInterval(() => {
+      controls();
+      if (Date.now() >= resendAt) stopTimer();
+    }, 1000);
   }
   function feedback(key, target = "login-status", success = false) {
     feedbackKey = key;
@@ -54,27 +124,39 @@
     message.dataset.kind = success ? "success" : "error";
     message.setAttribute("role", success ? "status" : "alert");
   }
-  function clearSecret() {
-    byId("mfa-qr").removeAttribute("src");
-    byId("mfa-secret").value = "";
-    byId("mfa-code").value = "";
-    byId("mfa-code").removeAttribute("aria-invalid");
-    byId("mfa-manual").open = false;
-    byId("mfa-setup").hidden = true;
-  }
   function stage(value) {
     phase = value;
-    for (const id of ["login-form", "register-form", "mfa-form"])
+    for (const id of formIds)
       byId(id).classList.toggle(
         "active",
-        id === (["mfa", "email"].includes(value) ? "mfa-form" : "login-form"),
+        id ===
+          {
+            code: "email-code-form",
+            recovery: "recovery-form",
+            reset: "reset-password-form",
+            register: "register-form",
+            login: "login-form",
+          }[value],
       );
-    byId("mfa-resend").hidden = value !== "email";
-    byId("mfa-code-label").dataset.i18n =
-      value === "email" ? "Codul primit pe email" : "Cod de autentificare";
+    if (value !== "code") stopTimer();
+    byId("email-code-address").textContent = value === "code" ? expectedEmail : "";
     window.HopperI18n?.apply();
-    if (["mfa", "email"].includes(value)) byId("mfa-code").focus();
+    controls();
+    if (value === "code") byId("email-code").focus();
+    else if (value === "reset") byId("reset-password").focus();
+    else if (value === "recovery") byId("recovery-email").focus();
     else if (value === "login") byId("login-email").focus();
+  }
+  function invalidate() {
+    generation++;
+    lock();
+    clearCode();
+    request = null;
+    recoveryIdentity = null;
+    clearPasswords();
+    expectedEmail = null;
+    pendingUserId = null;
+    stage("login");
   }
   function getClient() {
     if (!configured) throw Error("not-configured");
@@ -88,39 +170,18 @@
         },
       });
       client.auth.onAuthStateChange((event, next) => {
-        if (event === "TOKEN_REFRESHED" && authorized) {
-          let aal = null;
-          try {
-            aal = JSON.parse(
-              atob(next.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
-            ).aal;
-          } catch {
-            /* A malformed token cannot preserve access. */
-          }
+        if (event === "SIGNED_OUT" && !signingOut) invalidate();
+        if (["SIGNED_IN", "TOKEN_REFRESHED"].includes(event) && authorized) {
           if (
-            aal !== "aal2" ||
+            !hasVerifiedMethod(next) ||
             next?.user.id !== authorized.id ||
             next?.user.email?.toLowerCase() !== authorized.email
           ) {
-            generation++;
-            lock();
-            clearSecret();
-            stage("login");
+            invalidate();
             feedback("Sesiunea trebuie verificată din nou. Conectează-te.");
           }
         }
-        if (event === "SIGNED_IN" && pendingUserId && next?.user.id !== pendingUserId) {
-          generation++;
-          lock();
-          clearSecret();
-          stage("login");
-        }
-        if (event === "SIGNED_OUT") {
-          generation++;
-          lock();
-          clearSecret();
-          stage("login");
-        }
+        if (event === "SIGNED_IN" && pendingUserId && next?.user.id !== pendingUserId) invalidate();
       });
     }
     return client;
@@ -131,31 +192,30 @@
     if (error.message === "different-account")
       return "Acest cont online nu corespunde contului salvat pe dispozitiv.";
     if (error.message === "storage") return "Datele nu au putut fi salvate. Încearcă din nou.";
-    if (error.code === "invalid_credentials" || error.code === "invalid_login_credentials")
-      return "Emailul sau parola este incorectă. Încearcă din nou.";
-    if (error.code === "email_not_confirmed" || error.message === "email-unconfirmed")
-      return "Confirmă emailul, apoi conectează-te din nou.";
-    if (error.code === "otp_expired" || error.code === "otp_disabled")
-      return "Codul de email este incorect sau a expirat. Verifică ultimul email sau retrimite codul.";
+    if (error.message === "email-code-required")
+      return "Conectează-te din nou cu emailul și parola.";
+    if (error.code === "email_not_confirmed") return "Confirmă emailul folosind codul primit.";
+    if (error.code === "weak_password")
+      return "Alege o parolă mai puternică, de minimum 8 caractere.";
+    if (error.code === "same_password") return "Alege o parolă diferită de cea veche.";
     if (error.code === "user_already_exists")
-      return "Există deja un cont cu acest email. Conectează-te.";
-    if (error.code === "weak_password") return "Alege o parolă de cel puțin 8 caractere.";
-    if (error.status === 429 || error.code === "over_request_rate_limit")
+      return "Există deja un cont cu acest email. Intră în cont.";
+    if (error.message === "email-unconfirmed")
+      return "Emailul nu a fost confirmat. Cere un cod nou.";
+    if (error.code === "invalid_credentials" && phase !== "code")
+      return "Emailul sau parola sunt incorecte. Verifică-le sau creează un cont.";
+    if (error.code === "otp_expired" || error.code === "invalid_credentials")
+      return "Codul de email este incorect sau a expirat. Verifică ultimul email sau retrimite codul.";
+    if (["otp_disabled", "signup_disabled", "user_not_found"].includes(error.code))
+      return "Nu am putut trimite codul. Verifică adresa sau creează un cont.";
+    if (
+      error.status === 429 ||
+      ["over_request_rate_limit", "over_email_send_rate_limit"].includes(error.code)
+    )
       return "Prea multe încercări. Așteaptă puțin și încearcă din nou.";
-    if (error.code === "mfa_verification_failed" || error.code === "mfa_challenge_expired")
-      return "Codul este incorect sau a expirat. Introdu codul nou din Authenticator.";
+    if (error.code === "email_address_not_authorized")
+      return "Trimiterea emailurilor nu este disponibilă momentan. Încearcă mai târziu.";
     return "Conectarea nu a putut fi verificată. Verifică internetul și încearcă din nou.";
-  }
-  async function removeEnrollment(id = enrollFactor, required = false) {
-    if (id && client) {
-      try {
-        const result = await client.auth.mfa.unenroll({ factorId: id });
-        if (result.error && required) throw result.error;
-      } catch (error) {
-        if (required) throw error;
-      }
-    }
-    if (id === enrollFactor) enrollFactor = null;
   }
   async function run(action, target = "login-status") {
     if (busy) return;
@@ -168,50 +228,55 @@
     } catch (error) {
       if (token === generation) {
         feedback(errorMessage(error), target);
-        if (target === "mfa-status") {
-          byId("mfa-code").setAttribute("aria-invalid", "true");
-          byId("mfa-code").focus();
+        if (target === "email-code-status" && phase === "code") {
+          byId("email-code").setAttribute("aria-invalid", "true");
+          byId("email-code").focus();
         }
       }
     } finally {
       if (token !== generation && client) {
-        await removeEnrollment();
         try {
-          await client.auth.signOut({ scope: "local" });
+          await signOutLocal();
         } catch {
-          /* Access stays locked. */
+          /* Access stays locked after cancellation. */
         }
       }
       busy = false;
       controls();
     }
   }
-  async function validatedUser(token) {
-    const result = await getClient().auth.getUser();
+  async function validatedUser(token, requireMethod = true) {
+    const stored = await getClient().auth.getSession();
+    if (stored.error) throw stored.error;
+    if (token !== generation) return null;
+    const session = stored.data.session;
+    if (!session?.access_token) throw Error("invalid-session");
+    // Validate this exact token on the server before trusting its identity.
+    const result = await client.auth.getUser(session.access_token);
     if (result.error) throw result.error;
     if (token !== generation) return null;
     const user = result.data.user;
-    if (!user?.id || !user.email) throw Error("invalid-session");
+    const payload = claims(session);
+    if (
+      !user?.id ||
+      !user.email ||
+      payload?.sub !== user.id ||
+      payload.email?.toLowerCase() !== user.email.toLowerCase()
+    )
+      throw Error("invalid-session");
+    if (!user.email_confirmed_at || user.is_anonymous) throw Error("email-unconfirmed");
+    if (requireMethod && !hasVerifiedMethod(session)) throw Error("email-code-required");
     if (
       (expectedEmail && user.email.toLowerCase() !== expectedEmail) ||
       (pendingUserId && user.id !== pendingUserId)
     )
       throw Error("different-account");
-    if (!user.email_confirmed_at) throw Error("email-unconfirmed");
+    pendingUserId = user.id;
     return user;
   }
   async function finish(token) {
     const user = await validatedUser(token);
     if (!user) return;
-    const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (assurance.error) throw assurance.error;
-    if (token !== generation) return;
-    if (assurance.data.currentLevel !== "aal2") throw Error("mfa-required");
-    const factors = await client.auth.mfa.listFactors();
-    if (factors.error) throw factors.error;
-    if (token !== generation) return;
-    if (!factors.data.totp.some((factor) => factor.status === "verified"))
-      throw Error("mfa-required");
     const app = window.HopperApp;
     if (!app) throw Error("app-unavailable");
     const email = user.email.toLowerCase();
@@ -246,190 +311,205 @@
       }
       authorized = { id: user.id, email };
       candidate = null;
-      pendingFactor = null;
-      enrollFactor = null;
-      clearSecret();
+      request = null;
+      clearCode();
       feedback("");
       stage("ready");
-      byId("login-password").value = "";
-      byId("register-password").value = "";
       if (!app.openUser(account)) throw Error("app-unavailable");
     } catch {
       lock();
       throw Error("storage");
     }
   }
-  async function requireFactor(token) {
-    const user = await validatedUser(token);
-    if (!user) return;
-    pendingUserId = user.id;
-    const result = await client.auth.mfa.listFactors();
-    if (result.error) throw result.error;
-    if (token !== generation) return;
-    const verified = result.data.totp.find((factor) => factor.status === "verified");
-    clearSecret();
-    if (verified) {
-      pendingFactor = verified.id;
-      const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (assurance.error) throw assurance.error;
-      if (token !== generation) return;
-      if (assurance.data.currentLevel === "aal2") {
-        await finish(token);
-        return;
-      }
-      byId("mfa-heading").dataset.i18n = "Confirmă conectarea";
-      byId("mfa-intro").dataset.i18n = "Introdu codul din Google sau Microsoft Authenticator.";
-    } else {
-      // Clean up only this app's unfinished factors, never an existing verified factor.
-      for (const factor of result.data.all.filter(
-        (factor) =>
-          factor.factor_type === "totp" &&
-          factor.status === "unverified" &&
-          factor.friendly_name === "Hopper",
-      )) {
-        await removeEnrollment(factor.id, true);
-        if (token !== generation) return;
-      }
-      const enrollment = await client.auth.mfa.enroll({
-        factorType: "totp",
-        friendlyName: "Hopper",
-        issuer: "Hopper",
-      });
-      if (enrollment.error) throw enrollment.error;
-      if (token !== generation) {
-        await removeEnrollment(enrollment.data.id);
-        return;
-      }
-      pendingFactor = enrollment.data.id;
-      enrollFactor = pendingFactor;
-      const qr = enrollment.data.totp.qr_code;
-      byId("mfa-qr").src = qr.startsWith("<svg")
-        ? "data:image/svg+xml;charset=utf-8," + encodeURIComponent(qr)
-        : qr;
-      byId("mfa-secret").value = enrollment.data.totp.secret;
-      byId("mfa-setup").hidden = false;
-      byId("mfa-heading").dataset.i18n = "Protejează-ți contul";
-      byId("mfa-intro").dataset.i18n = "Adaugă Hopper în Authenticator, apoi introdu primul cod.";
+  function validEmail(email, target) {
+    const normalized = email?.trim().toLowerCase();
+    if (!normalized || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+      feedback("Introdu o adresă de email validă.", target);
+      return null;
     }
-    feedback("", "mfa-status");
-    stage("mfa");
+    return normalized;
   }
-  function signIn({ email, password }) {
+  async function sendCode() {
+    return request.kind === "recovery"
+      ? getClient().auth.resetPasswordForEmail(request.email)
+      : getClient().auth.resend({ type: "signup", email: request.email });
+  }
+  function showCode() {
+    startCooldown();
+    stage("code");
+    feedback("Verifică emailul și dosarul Spam pentru cod.", "email-code-status", true);
+  }
+  const signIn = ({ email, password }) => {
+    const normalized = validEmail(email, "login-status");
+    if (!normalized) return Promise.resolve();
+    if (!password) {
+      feedback("Completează parola.");
+      return Promise.resolve();
+    }
     return run(async (token) => {
       lock();
-      expectedEmail = email.toLowerCase();
+      expectedEmail = normalized;
       pendingUserId = null;
-      await removeEnrollment();
-      const result = await getClient().auth.signInWithPassword({
-        email: email.toLowerCase(),
-        password,
-      });
-      byId("login-password").value = "";
+      recoveryIdentity = null;
+      clearPasswords();
+      const result = await getClient().auth.signInWithPassword({ email: normalized, password });
       if (token !== generation) return;
       if (result.error?.code === "email_not_confirmed") {
-        confirmEmail();
+        request = { kind: "signup", email: normalized };
+        const sent = await sendCode();
+        if (sent.error) throw sent.error;
+        if (token === generation) showCode();
         return;
       }
       if (result.error) throw result.error;
       if (!result.data.session) throw Error("invalid-session");
-      await requireFactor(token);
+      await finish(token);
     });
-  }
-  function confirmEmail() {
-    clearSecret();
-    byId("mfa-heading").dataset.i18n = "Confirmă emailul";
-    byId("mfa-intro").dataset.i18n = "Introdu codul de confirmare primit pe email.";
-    stage("email");
-    feedback("Introdu codul de confirmare primit pe email.", "mfa-status", true);
-  }
-  function register({ name, email, password }) {
-    return run(async (token) => {
-      lock();
-      expectedEmail = email.toLowerCase();
-      pendingUserId = null;
-      const result = await getClient().auth.signUp({
-        email: email.toLowerCase(),
-        password,
-        options: { data: { name } },
-      });
-      byId("register-password").value = "";
-      if (result.error) throw result.error;
-      if (token !== generation) return;
-      if (result.data.session) await requireFactor(token);
-      else {
-        byId("login-email").value = email;
-        confirmEmail();
-      }
-    }, "register-status");
-  }
-  function verify() {
-    const code = byId("mfa-code").value.trim();
-    if (!/^\d{6}$/.test(code)) {
-      feedback(
-        phase === "email"
-          ? "Introdu codul de 6 cifre primit pe email."
-          : "Introdu codul de 6 cifre din Authenticator.",
-        "mfa-status",
-      );
-      byId("mfa-code").setAttribute("aria-invalid", "true");
-      byId("mfa-code").focus();
+  };
+  const register = ({ name, email, password }) => {
+    if (!name?.trim()) {
+      feedback("Completează numele.", "register-status");
+      return Promise.resolve();
+    }
+    const normalized = validEmail(email, "register-status");
+    if (!normalized) return Promise.resolve();
+    if (!password || password.length < 8) {
+      feedback("Alege o parolă de minimum 8 caractere.", "register-status");
       return Promise.resolve();
     }
     return run(async (token) => {
-      if (phase === "email") {
-        const result = await getClient().auth.verifyOtp({
-          email: expectedEmail,
-          token: code,
-          type: "email",
-        });
-        byId("mfa-code").value = "";
-        if (result.error) throw result.error;
-        if (token !== generation) return;
-        if (!result.data.session) throw Error("invalid-session");
-        await requireFactor(token);
-        return;
-      }
-      if (phase !== "mfa" || !pendingFactor) throw Error("mfa-required");
-      const result = await getClient().auth.mfa.challengeAndVerify({
-        factorId: pendingFactor,
-        code,
+      lock();
+      expectedEmail = normalized;
+      pendingUserId = null;
+      recoveryIdentity = null;
+      clearPasswords();
+      const result = await getClient().auth.signUp({
+        email: normalized,
+        password,
+        options: { data: { name: name.trim() } },
       });
-      byId("mfa-code").value = "";
       if (result.error) throw result.error;
       if (token !== generation) return;
-      await finish(token);
-    }, "mfa-status");
+      if (result.data.session) await finish(token);
+      else {
+        request = { kind: "signup", email: normalized };
+        showCode();
+      }
+    }, "register-status");
+  };
+  function startRecovery() {
+    const email = byId("login-email").value.trim();
+    invalidate();
+    feedback("");
+    byId("recovery-email").value = email;
+    stage("recovery");
+  }
+  function recover() {
+    const email = validEmail(byId("recovery-email").value, "recovery-status");
+    if (!email) return Promise.resolve();
+    return run(async (token) => {
+      lock();
+      localStorage.removeItem("expenses_current_user");
+      window.HopperPersistence?.schedule();
+      expectedEmail = email;
+      pendingUserId = null;
+      recoveryIdentity = null;
+      request = { kind: "recovery", email };
+      const result = await sendCode();
+      if (result.error) throw result.error;
+      if (token === generation) showCode();
+    }, "recovery-status");
+  }
+  function savePassword() {
+    const password = byId("reset-password").value;
+    const confirmation = byId("reset-password-confirm").value;
+    if (password.length < 8) {
+      feedback("Alege o parolă de minimum 8 caractere.", "reset-password-status");
+      return Promise.resolve();
+    }
+    if (password !== confirmation) {
+      feedback("Parolele nu coincid.", "reset-password-status");
+      return Promise.resolve();
+    }
+    return run(async (token) => {
+      if (phase !== "reset" || !recoveryIdentity) throw Error("invalid-session");
+      const user = await validatedUser(token, false);
+      if (!user || token !== generation) return;
+      if (user.id !== recoveryIdentity.id || user.email.toLowerCase() !== recoveryIdentity.email)
+        throw Error("different-account");
+      clearPasswords();
+      const result = await getClient().auth.updateUser({ password });
+      if (result.error) throw result.error;
+      if (token !== generation) return;
+      localStorage.removeItem("expenses_current_user");
+      window.HopperPersistence?.schedule();
+      await signOutLocal();
+      if (token !== generation) return;
+      request = null;
+      recoveryIdentity = null;
+      expectedEmail = null;
+      pendingUserId = null;
+      clearCode();
+      stage("login");
+      feedback("Parola a fost schimbată. Intră în cont cu noua parolă.", "login-status", true);
+    }, "reset-password-status");
+  }
+  function switchForm(id) {
+    if (!["login-form", "register-form"].includes(id)) return;
+    invalidate();
+    feedback("");
+    stage(id === "register-form" ? "register" : "login");
+  }
+  function verify() {
+    if (busy) return Promise.resolve();
+    const code = byId("email-code").value.trim();
+    if (!/^\d{6}$/.test(code)) {
+      feedback("Introdu codul de 6 cifre primit pe email.", "email-code-status");
+      byId("email-code").setAttribute("aria-invalid", "true");
+      byId("email-code").focus();
+      return Promise.resolve();
+    }
+    return run(async (token) => {
+      if (phase !== "code" || !expectedEmail) throw Error("email-code-required");
+      const result = await getClient().auth.verifyOtp({
+        email: expectedEmail,
+        token: code,
+        type: request?.kind === "recovery" ? "recovery" : "email",
+      });
+      clearCode();
+      if (result.error) throw result.error;
+      if (token !== generation) return;
+      if (!result.data.session) throw Error("invalid-session");
+      if (request?.kind === "recovery") {
+        const user = await validatedUser(token, false);
+        if (!user || token !== generation) return;
+        recoveryIdentity = { id: user.id, email: user.email.toLowerCase() };
+        stage("reset");
+        feedback("", "reset-password-status");
+      } else await finish(token);
+    }, "email-code-status");
   }
   function resend() {
-    if (phase !== "email" || !expectedEmail) return Promise.resolve();
+    if (phase !== "code" || !request || Date.now() < resendAt) return Promise.resolve();
     return run(async (token) => {
-      const result = await getClient().auth.resend({ type: "signup", email: expectedEmail });
+      const result = await sendCode();
       if (result.error) throw result.error;
-      if (token === generation)
-        feedback(
-          "Codul de confirmare a fost retrimis. Verifică și dosarul Spam.",
-          "mfa-status",
-          true,
-        );
-    }, "mfa-status");
+      if (token !== generation) return;
+      clearCode();
+      startCooldown();
+      feedback("Codul a fost retrimis. Verifică și dosarul Spam.", "email-code-status", true);
+    }, "email-code-status");
   }
   async function cancel() {
-    generation++;
-    lock();
-    clearSecret();
-    pendingFactor = null;
-    pendingUserId = null;
-    expectedEmail = null;
+    invalidate();
     feedback("");
-    stage("login");
     localStorage.removeItem("expenses_current_user");
     window.HopperPersistence?.schedule();
     if (!busy && client) {
       busy = true;
       controls();
-      await removeEnrollment();
       try {
-        await client.auth.signOut({ scope: "local" });
+        await signOutLocal();
       } catch {
         /* Explicit logout remains local. */
       }
@@ -439,7 +519,6 @@
   }
   function resume() {
     if (!configured) {
-      feedback("Conectarea securizată nu este disponibilă momentan.");
       controls();
       return Promise.resolve();
     }
@@ -453,34 +532,35 @@
       const result = await getClient().auth.getSession();
       if (result.error) throw result.error;
       if (token !== generation || !result.data.session) return;
-      await requireFactor(token);
+      await finish(token);
     });
   }
-  byId("mfa-form").addEventListener("submit", (event) => {
+  byId("forgot-password").addEventListener("click", startRecovery);
+  byId("recovery-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    void recover();
+  });
+  byId("reset-password-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    void savePassword();
+  });
+  for (const id of ["recovery-cancel", "reset-password-cancel"])
+    byId(id).addEventListener("click", () => void cancel());
+  byId("email-code-form").addEventListener("submit", (event) => {
     event.preventDefault();
     void verify();
   });
-  byId("mfa-resend").addEventListener("click", () => void resend());
-  byId("mfa-cancel").addEventListener("click", () => void cancel());
-  byId("mfa-code").addEventListener("input", () => {
-    byId("mfa-code").removeAttribute("aria-invalid");
-    feedback("", "mfa-status");
-  });
-  byId("mfa-copy").addEventListener("click", async () => {
-    const secret = byId("mfa-secret");
-    try {
-      await navigator.clipboard.writeText(secret.value);
-      feedback("Cheia a fost copiată. Adaug-o în Authenticator.", "mfa-status", true);
-    } catch {
-      secret.focus();
-      secret.select();
-      feedback("Selectează cheia și copiaz-o în Authenticator.", "mfa-status", true);
-    }
+  byId("email-code-resend").addEventListener("click", () => void resend());
+  byId("email-code-cancel").addEventListener("click", () => void cancel());
+  byId("email-code").addEventListener("input", () => {
+    byId("email-code").removeAttribute("aria-invalid");
+    feedback("", "email-code-status");
   });
   const onLogout = () => void cancel();
   const onLanguage = () => {
     if (feedbackKey)
       feedback(feedbackKey, feedbackTarget, byId(feedbackTarget).dataset.kind === "success");
+    controls();
   };
   document.addEventListener("hopper:logout", onLogout);
   document.addEventListener("hopper:language", onLanguage);
@@ -490,6 +570,10 @@
     getClient,
     signIn,
     register,
+    switchForm,
+    startRecovery,
+    recover,
+    savePassword,
     verify,
     resend,
     cancel,
@@ -497,7 +581,9 @@
     dispose() {
       generation++;
       lock();
-      clearSecret();
+      clearCode();
+      clearPasswords();
+      stopTimer();
       document.removeEventListener("hopper:logout", onLogout);
       document.removeEventListener("hopper:language", onLanguage);
       client?.auth.stopAutoRefresh();
