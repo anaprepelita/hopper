@@ -6,7 +6,7 @@ Pe telefoanele cu ecrane de până la 720 px, aplicația are o bară de navigare
 
 ## Conturi și păstrarea datelor
 
-Înregistrările locale ale conturilor și ultima sesiune deschisă folosesc în continuare cheile `expenses_users` și `expenses_current_user` din localStorage. Înainte de încărcarea scripturilor financiare este pregătită o copie locală nativă prin `@capacitor/preferences`, cu cheia `hopper_accounts_v1`. Copia se actualizează după modificarea conturilor, poate restaura înregistrările lipsă din WebView la următoarea pornire și păstrează modificările locale mai recente și deconectarea cerută de utilizator. Pozele rămân pe dispozitiv. Conturile noi folosesc email și parolă verificate de Supabase; parolele introduse nu sunt salvate local, iar câmpurile vechi sunt păstrate pentru compatibilitate. O copie locală a utilizatorului nu permite conectarea fără o sesiune verificată de Supabase.
+Înregistrările locale ale conturilor și ultima sesiune deschisă folosesc în continuare cheile `expenses_users` și `expenses_current_user` din localStorage. Înainte de încărcarea scripturilor financiare este pregătită o copie locală nativă prin `@capacitor/preferences`, cu cheia `hopper_accounts_v1`. Copia se actualizează după modificarea conturilor, poate restaura înregistrările lipsă din WebView la următoarea pornire și păstrează modificările locale mai recente și deconectarea cerută de utilizator. Pozele rămân pe dispozitiv. Conturile noi se conectează prin Google, cu identitatea verificată de Supabase; parolele introduse nu sunt salvate local, iar câmpurile vechi sunt păstrate pentru compatibilitate. O copie locală a utilizatorului nu permite conectarea fără o sesiune verificată de Supabase.
 
 Dacă citirea datelor eșuează, aplicația oferă reîncercarea, în loc să afișeze o listă aparent goală de conturi. Dacă actualizarea copiei native eșuează, datele locale sunt păstrate și se poate reîncerca. Dezinstalarea sau ștergerea tuturor datelor aplicației elimină ambele copii. Acest mecanism păstrează datele pe dispozitiv; sincronizarea între dispozitive necesită configurarea separată a serviciului Supabase.
 
@@ -30,21 +30,15 @@ Fiecare cont poate salva un nume afișat, universitatea, anul de studiu și valu
 
 Anul de studiu, valuta și sursa venitului folosesc dialoguri retro cu același aspect, navigare din tastatură și revenirea focalizării la selector după închidere. Alegerea valutei actualizează câmpul; **Salvează valuta** aplică și memorează preferința.
 
-## Autentificare și recuperarea parolei
+## Autentificare cu Google
 
-Autentificarea se deschide direct pe formularul de conectare, fără butoanele duplicate de conectare și înregistrare de deasupra. Butoanele retro pastel de sub formulare permit trecerea între înregistrare și conectare și focalizează primul câmp.
+Ecranul afișează **Continuă cu Google**, în stilul pastel al aplicației. Formularele istorice de email, parolă și recuperare sunt păstrate în cod pentru compatibilitatea conturilor și sesiunilor.
 
-Conectarea cere emailul și parola, cu butonul „Intră în cont”. Câmpurile afișează „Introdu email” și „Introdu parola”. Înregistrarea cere și numele, o parolă de minimum opt caractere și confirmarea emailului prin cod. Mesajele pentru date greșite sau lipsa internetului apar în formular. Nu este obligatoriu Authenticator.
+Conectarea deschide browserul securizat al sistemului și folosește Supabase cu PKCE S256. Revenirea trebuie să corespundă încercării active. Sesiunea exactă este verificată pe server, cu email confirmat, autentificare OAuth și identitate Google.
 
-Linkul „Ai uitat parola?” deschide recuperarea în aplicație: email → cod → parolă nouă și confirmare. După salvare apare mesajul de succes în stilul aplicației și se revine la conectarea cu noua parolă. Codurile incorecte sau expirate nu deschid contul; retrimiterea devine disponibilă după 60 de secunde.
+Anularea și răspunsurile întârziate păstrează bugetele salvate. La redeschidere, sesiunea este verificată din nou. Autentificarea nu activează sincronizarea financiară și nu încarcă poze sau parole.
 
-Dashboardul se deschide numai după validarea pe server a sesiunii și a emailului confirmat. Sesiunile valide sunt păstrate și reverificate la pornire. Recuperarea și anularea nu modifică datele financiare. Fără configurația Supabase sau resursele de autentificare, aplicația păstrează datele și rămâne blocată la conectare.
-
-**Confirmarea și recuperarea necesită emailuri funcționale.** Configurează SMTP și șabloanele „Confirm signup” și „Reset password”, cu codul în mesaj. Pașii și migrarea SQL curentă sunt în [ghidul de autentificare](supabase/AUTH.md). Conturile locale vechi se asociază după verificarea aceleiași adrese, păstrând datele și poza; un cont online creat fără parolă poate seta una prin recuperare. Autentificarea nu activează sincronizarea financiară.
-
-Mesajele pentru email lipsă, adresă invalidă, cod greșit sau expirat, limite de trimitere și indisponibilitatea serviciului rămân distincte. Conturile nu sunt identificate din lista locală înainte de verificare.
-
-Celelalte formulare afișează avertizări în limba aleasă lângă câmpurile obligatorii necompletate. Pentru suma unui venit sau a unei cheltuieli, mesajul în română este **Completează suma.** Salvarea focalizează primul câmp invalid și păstrează valorile introduse, fără să salveze înregistrări incomplete. Avertizările dispar după corectare; câmpurile opționale rămân opționale. Sunt verificate și formatul emailului, sumele pozitive și precizia de maximum două zecimale.
+Configurarea clientului OAuth, a furnizorului Google și a adreselor de revenire este descrisă în [ghidul de autentificare](supabase/AUTH.md). Secretul Google rămâne numai în Supabase.
 
 ## Economii
 

@@ -8,6 +8,7 @@ Aici sunt consemnate schimbările zilnice ale proiectului, după data din Român
 
 - Pregătite pluginul Browser și adresele native de revenire pentru Android și iOS.
 - Adăugate butonul Google în stilul Hopper, verificarea sesiunii pe server, PKCE și anularea revenirilor întârziate; păstrate datele conturilor existente.
+- Adăugate testele pentru autentificarea Google și actualizat ghidul de configurare; verificate 332 de teste în copia separată Google. Confirmate conectarea Google și păstrarea sesiunii pe Samsung.
 
 ## 2026-10-08
 
