@@ -5,6 +5,7 @@ import { initializeProblemReports } from "./support";
 import { initializeProfileCrop } from "./profile-crop";
 import { initializeAccountPersistence } from "./persistence";
 import { initializePhoneNavigation } from "./navigation";
+import { initializeGoogleAuth } from "./google-auth";
 
 // Reuse the existing buttons and dialog cancellation; never write account data.
 export function handleNativeBack(document: Document): boolean {
@@ -30,6 +31,16 @@ export function handleNativeBack(document: Document): boolean {
     cancel?.click();
     return true;
   }
+  if (
+    document.querySelector("#google-form.active") &&
+    !document.querySelector("#auth-screen.hidden")
+  ) {
+    const cancel = document.getElementById("google-cancel") as HTMLButtonElement | null;
+    if (cancel && !cancel.hidden) {
+      cancel.click();
+      return true;
+    }
+  }
   const registration = document.querySelector("#register-form.active");
   if (registration && !document.querySelector("#auth-screen.hidden")) {
     document.querySelector<HTMLButtonElement>('[data-target="login-form"]')?.click();
@@ -51,6 +62,7 @@ export async function initializeNativeShell() {
   const disposeReports = initializeProblemReports();
   const disposeCrop = initializeProfileCrop();
   const disposeNavigation = initializePhoneNavigation();
+  const disposeGoogle = await initializeGoogleAuth();
   const observer = new MutationObserver(updateBars);
   observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
   const listeners: { remove: () => Promise<void> }[] = [];
@@ -59,6 +71,7 @@ export async function initializeNativeShell() {
     disposeReports();
     disposeCrop();
     disposeNavigation();
+    await disposeGoogle();
     await Promise.allSettled(listeners.map((listener) => listener.remove()));
   };
   try {

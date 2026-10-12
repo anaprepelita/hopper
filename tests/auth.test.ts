@@ -33,7 +33,7 @@ const auth = () => win["HopperAuth"];
 const locked = () => expect(document.getElementById("app-screen")).toHaveClass("hidden");
 const opened = () => expect(document.getElementById("app-screen")).not.toHaveClass("hidden");
 const codeVisible = () => expect(document.getElementById("email-code-form")).toHaveClass("active");
-function token(user = serverUser, methods = ["password"]) {
+function token(user: any = serverUser, methods = ["password"]) {
   return (
     "header." +
     btoa(
@@ -63,6 +63,19 @@ function fakeCloud() {
       }),
       getSession: vi.fn(async (): Promise<any> => ({ data: { session }, error: null })),
       getUser: vi.fn(async (): Promise<any> => ({ data: { user }, error: null })),
+      signInWithOAuth: vi.fn(async (input: any): Promise<any> => {
+        const url = new URL("https://project.supabase.co/auth/v1/authorize");
+        url.searchParams.set("provider", "google");
+        url.searchParams.set("redirect_to", input.options.redirectTo);
+        url.searchParams.set("code_challenge", "x".repeat(43));
+        url.searchParams.set("code_challenge_method", "s256");
+        return { data: { url: url.href }, error: null };
+      }),
+      exchangeCodeForSession: vi.fn(async (): Promise<any> => {
+        session = makeSession(["oauth"]);
+        notify("SIGNED_IN");
+        return { data: { session }, error: null };
+      }),
       signInWithPassword: vi.fn(async (): Promise<any> => {
         session = makeSession();
         notify("SIGNED_IN");
@@ -96,7 +109,7 @@ function fakeCloud() {
   };
   return {
     client,
-    sdk: { createClient: vi.fn(() => client) },
+    sdk: { createClient: vi.fn((_url?: string, _key?: string, _options?: any) => client) },
     restore(methods = ["password"]) {
       session = makeSession(methods);
     },
@@ -113,12 +126,17 @@ function fakeCloud() {
     },
   };
 }
-async function boot(cloud = fakeCloud(), configured = true, user: any = legacy) {
+async function boot(cloud = fakeCloud(), configured = true, user: any = legacy, attempt?: any) {
   localStorage.clear();
   if (user) {
     localStorage.setItem("expenses_users", JSON.stringify([user]));
     localStorage.setItem("expenses_current_user", JSON.stringify(user));
   }
+  if (attempt)
+    localStorage.setItem(
+      "hopper_google_attempt:https://project.supabase.co",
+      JSON.stringify(attempt),
+    );
   document.body.innerHTML = new DOMParser().parseFromString(html, "text/html").body.innerHTML;
   document.querySelectorAll<HTMLDialogElement>("dialog").forEach((dialog) => {
     dialog.close = vi.fn(() => {
@@ -164,6 +182,7 @@ afterEach(() => {
     "HopperApp",
     "HopperCloudConfig",
     "HopperPersistence",
+    "HopperOAuth",
     "supabase",
   ])
     delete win[key];
@@ -173,7 +192,7 @@ afterEach(() => {
   localStorage.clear();
 });
 
-describe("Email/password authentication and recovery", () => {
+describe("Compatibility with existing email/password sessions and recovery", () => {
   it("keeps local records locked without configuration and leaves an actionable warning", async () => {
     const cloud = await boot(undefined, false);
     const before = localStorage.getItem("expenses_users");
@@ -241,6 +260,7 @@ describe("Email/password authentication and recovery", () => {
     await signIn();
     expect(JSON.parse(localStorage.getItem("expenses_users")!)[0]).toEqual({
       ...legacy,
+      authMethod: "email",
       authAccountId: "account-a",
       authProject: "https://project.supabase.co",
     });
@@ -363,7 +383,7 @@ describe("Email/password authentication and recovery", () => {
     expect(value("recovery-email").value).toBe(email);
     expect(value("recovery-form")).toHaveClass("active");
     value("recovery-cancel").click();
-    expect(value("login-form")).toHaveClass("active");
+    expect(value("google-form")).toHaveClass("active");
     locked();
   });
 
@@ -588,7 +608,7 @@ describe("Email/password authentication and recovery", () => {
     cloud.restore(["recovery"]);
     await boot(cloud);
     locked();
-    expect(value("login-status").textContent).toContain("emailul și parola");
+    expect(value("google-status").textContent).toContain("Conectează-te din nou");
   });
 
   it("respects explicit logout even with a saved SDK session", async () => {
@@ -604,7 +624,7 @@ describe("Email/password authentication and recovery", () => {
     await signIn();
     cloud.refresh(["anonymous"]);
     locked();
-    expect(value("login-status").textContent).toContain("verificată din nou");
+    expect(value("google-status").textContent).toContain("verificată din nou");
     await signIn();
     cloud.signOut();
     locked();
@@ -660,3 +680,4 @@ describe("Email/password authentication and recovery", () => {
     expect(sql).not.toContain("'aal2'");
   });
 });
+

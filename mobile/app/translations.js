@@ -1,5 +1,14 @@
 // Romanian key -> English, French, Russian.
 window.HopperMessages = {
+  "Continuă cu Google": ["Continue with Google", "Continuer avec Google", "Продолжить с Google"],
+  "Alege contul Google și începe bugetul tău.": ["Choose your Google account and start your budget.", "Choisis ton compte Google et commence ton budget.", "Выберите аккаунт Google и начните вести бюджет."],
+  "Anulează conectarea": ["Cancel sign-in", "Annuler la connexion", "Отменить вход"],
+  "Conectarea Google necesită aplicația actualizată.": ["Google sign-in requires the updated app.", "La connexion Google nécessite la mise à jour de l’application.", "Для входа через Google обновите приложение."],
+  "Contul Google nu a putut fi verificat. Încearcă din nou.": ["Your Google account could not be verified. Try again.", "Ton compte Google n’a pas pu être vérifié. Réessaie.", "Не удалось проверить аккаунт Google. Повторите попытку."],
+  "Conectarea Google a expirat. Încearcă din nou.": ["Google sign-in expired. Try again.", "La connexion Google a expiré. Réessaie.", "Срок входа через Google истёк. Повторите попытку."],
+  "Conectarea Google nu este disponibilă momentan. Încearcă mai târziu.": ["Google sign-in is currently unavailable. Try later.", "La connexion Google est indisponible pour le moment. Réessaie plus tard.", "Вход через Google сейчас недоступен. Попробуйте позже."],
+  "Continuă în fereastra Google. Revii automat în Hopper.": ["Continue in the Google window. You will return to Hopper automatically.", "Continue dans la fenêtre Google. Tu reviendras automatiquement dans Hopper.", "Продолжите в окне Google. Вы автоматически вернётесь в Hopper."],
+  "Conectarea Google a fost anulată.": ["Google sign-in was cancelled.", "La connexion Google a été annulée.", "Вход через Google отменён."],
   "Încearcă din nou": ["Try again", "Réessayer", "Повторить"],
   "Contul nu a putut fi confirmat. Încearcă din nou sau conectează-te dacă a fost deja salvat.": ["The account could not be confirmed. Retry or sign in if it was already saved.", "Le compte n’a pas pu être confirmé. Réessayez ou connectez-vous s’il a déjà été enregistré.", "Не удалось подтвердить сохранение аккаунта. Повторите попытку или войдите, если аккаунт уже сохранён."],
   "Alege o dată validă.": [

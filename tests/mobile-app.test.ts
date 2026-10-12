@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   native: vi.fn(() => false),
   bars: vi.fn(async () => {}),
   minimize: vi.fn(async () => {}),
+  launch: vi.fn(async () => undefined),
   listeners: new Map<string, (event: { isActive: boolean }) => void>(),
   removals: vi.fn(),
 }));
@@ -17,6 +18,7 @@ vi.mock("@capacitor/core", () => ({
 vi.mock("@capacitor/app", () => ({
   App: {
     minimizeApp: mocks.minimize,
+    getLaunchUrl: mocks.launch,
     addListener: vi.fn(async (name, handler) => {
       mocks.listeners.set(name, handler);
       return {
@@ -26,6 +28,14 @@ vi.mock("@capacitor/app", () => ({
         },
       };
     }),
+  },
+}));
+
+vi.mock("@capacitor/browser", () => ({
+  Browser: {
+    open: vi.fn(async () => {}),
+    close: vi.fn(async () => {}),
+    addListener: vi.fn(async () => ({ remove: async () => {} })),
   },
 }));
 
@@ -204,6 +214,6 @@ describe("Packaged mobile app", () => {
     expect(writes).not.toHaveBeenCalled();
     await dispose();
     expect(mocks.listeners.size).toBe(0);
-    expect(mocks.removals).toHaveBeenCalledTimes(2);
+    expect(mocks.removals).toHaveBeenCalledTimes(3);
   });
 });

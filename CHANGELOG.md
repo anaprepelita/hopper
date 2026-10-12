@@ -7,6 +7,7 @@ Aici sunt consemnate schimbările zilnice ale proiectului, după data din Român
 ### Conectare cu Google
 
 - Pregătite pluginul Browser și adresele native de revenire pentru Android și iOS.
+- Adăugate butonul Google în stilul Hopper, verificarea sesiunii pe server, PKCE și anularea revenirilor întârziate; păstrate datele conturilor existente.
 
 ## 2026-10-08
 

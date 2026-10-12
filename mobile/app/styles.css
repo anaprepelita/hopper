@@ -1133,3 +1133,11 @@ select:focus {
 .auth-recovery-link { display: block; width: auto; min-height: 44px; margin: -4px 0 8px auto; padding: 8px 12px; border: 1px solid var(--w-mauve); border-radius: 12px; background: var(--w-lilac); color: var(--w-ink); font: inherit; font-size: .85rem; font-weight: 800; cursor: pointer; }
 .auth-recovery-link:focus-visible { outline: 2px dashed var(--w-ink); outline-offset: 3px; }
 @media (hover: hover) and (pointer: fine) { .auth-recovery-link:hover { background: var(--w-blush); } }
+
+.legacy-auth[hidden] { display: none !important; }
+.google-sign-in { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 48px; padding: 12px 16px; border: 1px solid #747775; border-radius: 12px; background: #fff; color: #1f1f1f; font: 600 14px Arial, sans-serif; cursor: pointer; box-shadow: 3px 3px 0 var(--w-blush); }
+.google-sign-in svg { flex: 0 0 20px; }
+.google-sign-in:focus-visible { outline: 2px dashed var(--w-ink); outline-offset: 4px; }
+.google-sign-in:disabled { opacity: .65; cursor: wait; }
+#google-cancel[hidden] { display: none; }
+

@@ -31,7 +31,17 @@
 
         <p id="auth-service-status" class="form-feedback auth-service-status" role="alert" aria-atomic="true" hidden data-i18n="Conectarea securizată nu este disponibilă momentan.">Conectarea securizată nu este disponibilă momentan.</p>
 
-        <form id="login-form" class="auth-form active" novalidate>
+        <form id="google-form" class="auth-form active" novalidate>
+          <h2 data-i18n="Bine ai revenit!">Bine ai revenit!</h2>
+          <p class="student-note" data-i18n="Alege contul Google și începe bugetul tău.">Alege contul Google și începe bugetul tău.</p>
+          <button id="google-sign-in" type="submit" class="google-sign-in">
+            <svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.17 7.09-10.35 7.09-17.65Z"/><path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.78-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.87.92 7.53 2.56 10.78l7.97-6.19Z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48Z"/></svg>
+            <span data-i18n="Continuă cu Google">Continuă cu Google</span>
+          </button>
+          <p id="google-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
+          <button id="google-cancel" type="button" class="auth-recovery-link" data-i18n="Anulează conectarea" hidden>Anulează conectarea</button>
+        </form>
+        <div hidden class="legacy-auth"><form id="login-form" class="auth-form" novalidate>
           <h2><span data-i18n="Bine ai revenit!">Bine ai revenit!</span></h2>
           <div class="field-group">
             <label for="login-email"><span data-i18n="Email">Email</span></label>
@@ -45,9 +55,9 @@
           <button type="submit" class="primary-button"><span data-i18n="Intră în cont">Intră în cont</span></button>
           <p id="login-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
           <button type="button" class="auth-form-switch" data-target="register-form" aria-controls="register-form" data-i18n="Înregistrează-te">Înregistrează-te</button>
-        </form>
+        </form></div>
 
-        <form id="register-form" class="auth-form" novalidate>
+        <div hidden class="legacy-auth"><form id="register-form" class="auth-form" novalidate>
           <h2><span data-i18n="Începe bugetul tău">Începe bugetul tău</span></h2>
           <p class="student-note auth-migration-note" data-i18n="Folosește același email pentru a păstra datele acestui dispozitiv.">Folosește același email pentru a păstra datele acestui dispozitiv.</p>
           <div class="field-group">
@@ -66,9 +76,9 @@
           <p id="register-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
           <button type="submit" class="primary-button"><span data-i18n="Înregistrează-te">Înregistrează-te</span></button>
           <button type="button" class="auth-form-switch" data-target="login-form" aria-controls="login-form" data-i18n="Înapoi la conectare">Înapoi la conectare</button>
-        </form>
+        </form></div>
 
-        <form id="recovery-form" class="auth-form" novalidate>
+        <div hidden class="legacy-auth"><form id="recovery-form" class="auth-form" novalidate>
           <h2 data-i18n="Ai uitat parola?">Ai uitat parola?</h2>
           <p class="student-note" data-i18n="Introdu emailul contului pentru a primi un cod de resetare.">Introdu emailul contului pentru a primi un cod de resetare.</p>
           <div class="field-group">
@@ -78,7 +88,7 @@
           <p id="recovery-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
           <button type="submit" class="primary-button" data-i18n="Trimite codul">Trimite codul</button>
           <button id="recovery-cancel" type="button" class="auth-form-switch" data-i18n="Înapoi la conectare">Înapoi la conectare</button>
-        </form>
+        </form></div>
 
         <form id="email-code-form" class="auth-form" novalidate>
           <div class="email-code-badge" aria-hidden="true">✦</div>
@@ -95,7 +105,7 @@
           <button id="email-code-cancel" type="button" class="secondary-button" data-i18n="Înapoi la conectare">Înapoi la conectare</button>
         </form>
 
-        <form id="reset-password-form" class="auth-form" novalidate>
+        <div hidden class="legacy-auth"><form id="reset-password-form" class="auth-form" novalidate>
           <h2 data-i18n="Alege o parolă nouă">Alege o parolă nouă</h2>
           <div class="field-group">
             <label for="reset-password" data-i18n="Parolă nouă">Parolă nouă</label>
@@ -109,7 +119,7 @@
           <p id="reset-password-status" class="form-feedback" role="alert" aria-atomic="true" hidden></p>
           <button type="submit" class="primary-button" data-i18n="Salvează parola">Salvează parola</button>
           <button id="reset-password-cancel" type="button" class="secondary-button" data-i18n="Înapoi la conectare">Înapoi la conectare</button>
-        </form>
+        </form></div>
       </div>
     </div>
 
