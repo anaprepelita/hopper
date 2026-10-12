@@ -2,6 +2,12 @@
 
 Aici sunt consemnate schimbările zilnice ale proiectului, după data din România. Jurnalul este completat manual înainte de commit și push.
 
+## 2026-10-12
+
+### Conectare cu Google
+
+- Pregătite pluginul Browser și adresele native de revenire pentru Android și iOS.
+
 ## 2026-10-08
 
 ### Revenire la email și parolă
